@@ -11,8 +11,9 @@ Authors:
 import numpy as np
 
 
-def SVMclassifier(data):
+def SVMclassifier(data,classes):
     (m, n) = data.shape  # dimensionality and number of points, respectively
+    
     # computationally cheaper way to compute Gram matrix
     gram = np.zeros((n, n))
     for i in range(n):
@@ -21,11 +22,13 @@ def SVMclassifier(data):
             gram[j, i] = gram[i, j]
             
     print(gram)
-    print(np.dot(data.T, data))
-
 
 if __name__ == "__main__":
-    ra, dec, u, g, r, i, z, redshift = np.genfromtxt('data.csv', delimiter=',',
-                                                     skip_header=2).T
-    data = np.array([u-g, g-r, r-i])
-    SVMclassifier(np.array([[1,2,3,4,5],[6,7,8,9,10],[11,12,13,14,15]]))
+    # Import the data in 2 seperate stmts b/c genfromtxt doesnt like multityping
+    u, g, r, i, z = np.genfromtxt('data.csv', delimiter=',', skip_header=2,
+                                  usecols=(0,1,2,3,4)).T
+    subClass = np.genfromtxt('data.csv', delimiter=',',skip_header=2,usecols=5,
+                             dtype=str)
+    
+    data = np.array([u-g, g-r, r-i, i-z])
+    SVMclassifier(data,subClass)
