@@ -82,5 +82,6 @@ if __name__ == "__main__":
     fig1.subplots_adjust(hspace=0, wspace=0)
     fig1.show()
     fig1.savefig('./out/color_corner.pdf')
+    fig1.savefig('./out/color_corner.png')
     
     SVMclassifier(colordata,subClass)
