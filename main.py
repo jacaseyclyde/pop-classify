@@ -35,26 +35,28 @@ if __name__ == "__main__":
     
     colordata = np.array([u-g, g-r, r-i, i-z])
     
-    # convert string class labels to numeric class labels (for use w/ scatter)
+    # convert string class labels to color labels (for use w/ scatter)
     # for now this is just what's in the sample data. this could be automated
-    # but I want to keep some control over the colors themselves
-    cdict = {'A0':'white', 'F2':'lightyellow', 'F5':'lightyellow', 'F9':'lightyellow', 'G0':'yellow',
-             'G2':'yellow', 'K1':'orange', 'K3':'orange', 'K5':'orange', 'K7':'orange',
-             'M0':'red', 'M1':'red', 'M2':'red', 'M2V':'red', 'M3':'red',
-             'M6':'red', 'M8':'red', 'T2':'brown', 'Carbon_lines':'blue',
-             'WD':'purple'}
+    # but I want to keep some control over the colors themselves.
     
-    numClass = []
+    classes = np.unique(subClass)
+    cdict = {}
+    
+    cdict = {'O':'blue','B':'lightskyblue','A':'white','F':'lightyellow',
+             'G':'yellow','K':'orange','M':'red','T':'brown','L':'saddlebrown',
+             'C':'black','W':'purple'}
+    
+    colClass = []
     for c in subClass:
-        numClass.append(cdict[c])
+        colClass.append(cdict[c[0]])
         
-    numClass = np.array(numClass)
+    colClass = np.array(colClass)
     
     # plot the classes/colors
     fig1, ax1 = plt.subplots(3, 3, sharex=True, sharey=True)
     fig1.set_size_inches(24,24)
     
-    ax1[0, 0].scatter(colordata[0], colordata[1], c=numClass, cmap=cdict, s=50)
+    ax1[0, 0].scatter(colordata[0], colordata[1], c=colClass, s=50)
     ax1[0, 0].set_ylabel('$g-r$')
     ax1[0, 0].set_xticklabels([])
     ax1[0, 0].set_yticklabels([])
@@ -62,21 +64,21 @@ if __name__ == "__main__":
     ax1[0, 1].axis('off')
     ax1[0, 2].axis('off')
     
-    ax1[1, 0].scatter(colordata[0], colordata[2], c=numClass, s=50)
+    ax1[1, 0].scatter(colordata[0], colordata[2], c=colClass, s=50)
     ax1[1, 0].set_ylabel('$r-i$')
     
-    ax1[1, 1].scatter(colordata[1], colordata[2], c=numClass, s=50)
+    ax1[1, 1].scatter(colordata[1], colordata[2], c=colClass, s=50)
     
     ax1[1, 2].axis('off')
     
-    ax1[2, 0].scatter(colordata[0], colordata[3], c=numClass, s=50)
+    ax1[2, 0].scatter(colordata[0], colordata[3], c=colClass, s=50)
     ax1[2, 0].set_xlabel('$u-g$')
     ax1[2, 0].set_ylabel('$i-z$')
     
-    ax1[2, 1].scatter(colordata[1], colordata[3], c=numClass, s=50)
+    ax1[2, 1].scatter(colordata[1], colordata[3], c=colClass, s=50)
     ax1[2, 1].set_xlabel('$g-r$')
     
-    ax1[2, 2].scatter(colordata[0], colordata[3], c=numClass, s=50)
+    ax1[2, 2].scatter(colordata[0], colordata[3], c=colClass, s=50)
     ax1[2, 2].set_xlabel('$r-i$')
     
     fig1.subplots_adjust(hspace=0, wspace=0)
