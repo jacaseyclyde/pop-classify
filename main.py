@@ -10,8 +10,51 @@ Authors:
 
 import numpy as np
 
-import matplotlib as mpl
 import matplotlib.pyplot as plt
+
+def CornerPlot(data,labels):
+    # convert string class labels to color labels (for use w/ scatter)
+    # for now this is just what's in the sample data. this could be automated
+    # but I want to keep some control over the colors themselves.
+        
+    cdict = {'O':'blue','B':'lightskyblue','A':'white','F':'lightyellow',
+             'G':'yellow','K':'orange','M':'red','T':'brown','L':'saddlebrown',
+             'C':'black','W':'purple'}
+    
+    colClass = []
+    for c in subClass:
+        colClass.append(cdict[c[0]])
+        
+    colClass = np.array(colClass)
+    
+    # plot the classes/colors
+    nAx = len(data)
+    
+    fig1, ax1 = plt.subplots(nAx - 1, nAx - 1, sharex=True, sharey=True)
+    fig1.set_size_inches(12,12)
+    
+    ax1[0,0].set_xticklabels([])
+    ax1[0,0].set_yticklabels([])
+    
+    for i in range(nAx - 1):
+        for j in range(nAx - 1):
+            if j > i:
+                ax1[i, j].axis('off')
+                
+            else:
+                ax1[i, j].scatter(colordata[j], colordata[nAx - 1 - i], c=colClass, s=50)
+                
+            if j == 0:
+                ax1[i, j].set_ylabel(labels[nAx - 1 - i])
+            
+            if i == nAx - 2:
+                ax1[i, j].set_xlabel(labels[j])
+    
+    
+    fig1.subplots_adjust(hspace=0, wspace=0)
+    fig1.show()
+    fig1.savefig('./out/color_corner.pdf')
+    fig1.savefig('./out/color_corner.png')
 
 
 def SVMclassifier(data,classes):
@@ -35,49 +78,10 @@ if __name__ == "__main__":
     
     colordata = np.array([u-g, g-r, r-i, i-z, u-r, u-i, u-z, g-i, g-z, r-z])
     
-    # convert string class labels to color labels (for use w/ scatter)
-    # for now this is just what's in the sample data. this could be automated
-    # but I want to keep some control over the colors themselves.
-        
-    cdict = {'O':'blue','B':'lightskyblue','A':'white','F':'lightyellow',
-             'G':'yellow','K':'orange','M':'red','T':'brown','L':'saddlebrown',
-             'C':'black','W':'purple'}
-    
-    colClass = []
-    for c in subClass:
-        colClass.append(cdict[c[0]])
-        
-    colClass = np.array(colClass)
-    
-    # plot the classes/colors
-    nAx = len(colordata)
+   
     axLabels = ['$u-g$', '$g-r$', '$r-i$', '$i-z$', '$u-r$', '$u-i$', '$u-z$',
                 '$g-i$', '$g-z$', '$r-z$']
     
-    fig1, ax1 = plt.subplots(nAx - 1, nAx - 1, sharex=True, sharey=True)
-    fig1.set_size_inches(12,12)
+    CornerPlot(colordata,axLabels)
     
-    ax1[0,0].set_xticklabels([])
-    ax1[0,0].set_yticklabels([])
-    
-    for i in range(nAx - 1):
-        for j in range(nAx - 1):
-            if j > i:
-                ax1[i, j].axis('off')
-                
-            else:
-                ax1[i, j].scatter(colordata[j], colordata[i+1], c=colClass, s=50)
-                
-            if j == 0:
-                ax1[i, j].set_ylabel(axLabels[nAx - 1 - i])
-            
-            if i == nAx - 2:
-                ax1[i, j].set_xlabel(axLabels[j])
-    
-    
-    fig1.subplots_adjust(hspace=0, wspace=0)
-    fig1.show()
-    fig1.savefig('./out/color_corner.pdf')
-    fig1.savefig('./out/color_corner.png')
-    
-    SVMclassifier(colordata,subClass)
+    #SVMclassifier(colordata,subClass)
