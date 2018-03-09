@@ -60,10 +60,7 @@ def CornerPlot(data,labels):
     fig1.savefig('./out/color_corner.pdf')
     fig1.savefig('./out/color_corner.png')
 
-
-def SVMclassifier(data,classes,score=False):
-    print("Starting SVM classifier")
-    t0 = time.time()
+def GramMatrix(data):
     (m, n) = data.shape  # dimensionality and number of points, respectively
     
     # computationally cheaper way to compute Gram matrix
@@ -73,9 +70,18 @@ def SVMclassifier(data,classes,score=False):
         for j in range(i + 1):
             gram[i, j] = np.dot(data[:, i], data[:, j])
             gram[j, i] = gram[i, j]
-            
+    
+    return gram
+
+def SVMclassifier(data,classes,score=False):
+    print("Starting SVM classifier")
+    t0 = time.time()
+    
+    gram = GramMatrix(data.T)
+    
     t1 = time.time()
     print("Gram matrix complete. Time to complete: {0} ms".format(t1 - t0))
+    
     print("Training SVM...")
             
     clf = svm.SVC(kernel='precomputed')
@@ -85,14 +91,13 @@ def SVMclassifier(data,classes,score=False):
     print("SVM training complete. Training time for {0} points: {1} s"
           .format(n, t2 - t1))
     
-    if score == True:
-        print("Scoring...")
-        score = clf.score(gram, classes)
-        t2 = time.time()
-        print("Scoring complete. Classification time for {0} points: {1} s"
-              .format(n, t2 - t1))
-        print("Classifier score: {0}".format(score))
-        print("SVM classification complete. Total runtime: {0} s".format(t2 - t0))
+    print("Scoring...")
+    score = clf.score(gram, classes)
+    t3 = time.time()
+    print("Scoring complete. Classification time for {0} points: {1} s"
+          .format(n, t3- t2))
+    print("Classifier score: {0}".format(score))
+    print("SVM classification complete. Total runtime: {0} s".format(t3 - t0))
         
     return clf
 
@@ -115,5 +120,5 @@ if __name__ == "__main__":
     clr_train, clr_test, cls_train, cls_test = train_test_split(colordata,
                                                                 subClass)
     
-    #SVMclassifier(colordata,subClass)
+    SVMclassifier(colordata,subClass)
 
