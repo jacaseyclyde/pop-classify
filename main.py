@@ -8,6 +8,7 @@ Authors:
     Kevin Prasad
 """
 import time
+import os
 
 import numpy as np
 from scipy import interp
@@ -20,10 +21,24 @@ from sklearn.preprocessing import label_binarize
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.metrics import roc_curve, auc
 
+from itertools import cycle
+
 # globals
 cdict = {'O':'blue','B':'lightskyblue','A':'white','F':'lightyellow',
              'G':'yellow','K':'orange','M':'red','T':'brown','L':'saddlebrown',
              'C':'black','W':'purple'}
+
+# init data save locations
+if not os.path.exists('./out'):
+    os.makedirs('./out')
+    
+if not os.path.exists('./out/pdf'):
+    os.makedirs('./out/pdf')
+    
+if not os.path.exists('./out/png'):
+    os.makedirs('./out/png')
+
+
 
 def CornerPlot(data,cat,labels):
     # convert string class labels to color labels (for use w/ scatter)
@@ -60,8 +75,8 @@ def CornerPlot(data,cat,labels):
     
     fig1.subplots_adjust(hspace=0, wspace=0)
     fig1.show()
-    fig1.savefig('./out/color_corner.pdf')
-    fig1.savefig('./out/color_corner.png')
+    fig1.savefig('./out/pdf/color_corner.pdf')
+    fig1.savefig('./out/png/color_corner.png')
 
 def GramMatrix(data):
     (m, n) = data.shape  # dimensionality and number of points, respectively
@@ -165,11 +180,16 @@ def SVMAnalysis(X_train,X_test,y_train,y_test):
     plt.plot(fpr['macro'], tpr['macro'], label='macro-average ROC curve (area = {0:0.2f})'
              .format(roc_auc["macro"]), color='navy', linestyle=':', linewidth=4)
     
-    #colors = cycle(['aqua', 'darkorange', 'cornflowerblue'])
-    for i in range(n_classes):
-        plt.plot(fpr[i], tpr[i], color=cdict[y_unique[i]], lw=2,
+    colors = cycle([(0., 73./255., 73./255.), (255./255., 182./255., 119./255.),
+                    (73./255., 0./255., 146./255.), (182./255., 109./255., 255./255.),
+                    (109./255., 182./255., 255./255.), (182./255., 219./255., 255./255.),
+                    (146./255., 0., 0.), (146./255., 73./255., 0.),
+                    (36./255., 255./255., 36./255.), (255./255., 255./255., 109./255.),
+                    (0., 0., 0.)])
+    for i, color in zip(range(n_classes), colors):
+        plt.plot(fpr[i], tpr[i], color=color, lw=2, 
                  label='Class {0} Stars (area = {1:0.2f})'
-                 ''.format(y_unique[i], roc_auc[i]))
+                 .format(y_unique[i], roc_auc[i]))
     
     plt.plot([0, 1], [0, 1], 'k--', lw=2)
     plt.xlim([0.0, 1.0])
@@ -180,6 +200,10 @@ def SVMAnalysis(X_train,X_test,y_train,y_test):
     plt.legend(loc="lower right")
     plt.show()
     
+    plt.savefig('./out/pdf/svm_roc.pdf')
+    plt.savefig('./out/png/svm_roc.png')
+    
+    t2 = time.time()
     print("SVM analysis complete. Total runtime: {0} s".format(t2 - t0))
     
     return clf, fpr, tpr, roc_auc
