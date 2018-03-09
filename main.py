@@ -121,7 +121,7 @@ def SVMAnalysis(X_train,X_test,y_train,y_test):
           .format(len(X_train), t_test))
     print("Classifier score: {0}".format(score))
     
-    # Generate analysis graphs
+    # Generate graphs/data for analysis
     print("Generating ROC Curves...")
     y_unique = np.unique(np.concatenate((y_train,y_test)))
     
@@ -156,7 +156,29 @@ def SVMAnalysis(X_train,X_test,y_train,y_test):
     fpr["macro"] = all_fpr
     tpr["macro"] = mean_tpr
     roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
-
+    
+    plt.figure(figsize=(12,12))
+    plt.plot(fpr['micro'], tpr['micro'], label='micro-average ROC curve (area = {0:0.2f})'
+             .format(roc_auc["micro"]), color='deeppink', linestyle=':',
+             linewidth=4)
+    
+    plt.plot(fpr['macro'], tpr['macro'], label='macro-average ROC curve (area = {0:0.2f})'
+             .format(roc_auc["macro"]), color='navy', linestyle=':', linewidth=4)
+    
+    #colors = cycle(['aqua', 'darkorange', 'cornflowerblue'])
+    for i in range(n_classes):
+        plt.plot(fpr[i], tpr[i], color=cdict[y_unique[i]], lw=2,
+                 label='Class {0} Stars (area = {1:0.2f})'
+                 ''.format(y_unique[i], roc_auc[i]))
+    
+    plt.plot([0, 1], [0, 1], 'k--', lw=2)
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Stellar Class Receiver Operating Characteristics: Support Vector Machine')
+    plt.legend(loc="lower right")
+    plt.show()
     
     print("SVM analysis complete. Total runtime: {0} s".format(t2 - t0))
     
