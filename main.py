@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 
 from sklearn import svm
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import label_binarize
 
 def CornerPlot(data,labels):
     # convert string class labels to color labels (for use w/ scatter)
@@ -73,33 +74,53 @@ def GramMatrix(data):
     return gram
 
 def SVMAnalysis(X_train,X_test,y_train,y_test):
-    print("Starting SVM classifier")
+    print("Starting SVM analysis")
+    print("Initializing...")
     t0 = time.time()
-    print("Computing Gram matrix...")
     
-    gram_train = GramMatrix(X_train.T)
-    
-    t1 = time.time()
-    print("Gram matrix complete. Time to complete: {0} ms".format(t1 - t0))
-    
-    print("Training SVM...")
-            
     clf = svm.SVC(kernel='precomputed')
-    clf.fit(gram_train, y_train)
     
+    # Compute gram matrices for both sets
+    print("Computing training Gram matrix...")
+    t1 = time.time()
+    gram_train = GramMatrix(X_train.T)
     t2 = time.time()
+    
+    t_gram_train = t2 - t1
+    print("Training Gram matrix complete. Time to compute for {0} points: {1} s"
+          .format(len(X_train),t_gram_train))
+    
+    print("Computing test Gram matrix...")
+    t1 = time.time()
+    gram_test = GramMatrix(X_test.T)
+    t2 = time.time()
+    
+    t_gram_test = t2 - t1
+    print("Test Gram matrix complete. Time to compute for {0} points: {1} s"
+          .format(len(X_test),t_gram_test))
+    
+    # Compute basic statistics for SVM
+    print("Training SVM...")
+    t1 = time.time()
+    clf.fit(gram_train, y_train)
+    t2 = time.time()
+    
+    t_train = t2 - t1
     print("SVM training complete. Training time for {0} points: {1} s"
-          .format(len(X_train), t2 - t1))
+          .format(len(X_train), t_train))
     
     print("Scoring...")
-    score = clf.score(gram_train, y_train)
-    t3 = time.time()
+    t1 = time.time()
+    score = clf.score(gram_test, y_test)
+    t2 = time.time()
+    
+    t_test = t2 - t1
     print("Scoring complete. Classification time for {0} points: {1} s"
-          .format(len(X_train), t3- t2))
+          .format(len(X_train), t_test))
     print("Classifier score: {0}".format(score))
-    print("SVM classification complete. Total runtime: {0} s".format(t3 - t0))
-        
-    return clf
+    
+    print("SVM analysis complete. Total runtime: {0} s".format(t2 - t0))
+    
 
 if __name__ == "__main__":
     # Import the data in 2 seperate stmts b/c genfromtxt doesnt like multityping
@@ -118,7 +139,9 @@ if __name__ == "__main__":
     
     # split data into training and test sets
     clr_train, clr_test, cls_train, cls_test = train_test_split(colordata,
-                                                                subClass)
+                                                                subClass,
+                                                                test_size=.5,
+                                                                random_state=0)
     
     SVMAnalysis(clr_train, clr_test, cls_train, cls_test)
 
