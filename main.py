@@ -10,6 +10,7 @@ Authors:
 import time
 
 import numpy as np
+from scipy import interp
 
 import matplotlib.pyplot as plt
 
@@ -19,7 +20,7 @@ from sklearn.preprocessing import label_binarize
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.metrics import roc_curve, auc
 
-def CornerPlot(data,labels):
+def CornerPlot(data,cat,labels):
     # convert string class labels to color labels (for use w/ scatter)
     # for now this is just what's in the sample data. this could be automated
     # but I want to keep some control over the colors themselves.
@@ -29,7 +30,7 @@ def CornerPlot(data,labels):
              'C':'black','W':'purple'}
     
     colClass = []
-    for c in subClass:
+    for c in cat:
         colClass.append(cdict[c[0]])
         
     colClass = np.array(colClass)
@@ -142,6 +143,22 @@ def SVMAnalysis(X_train,X_test,y_train,y_test):
     fpr["micro"], tpr["micro"], _ = roc_curve(y_test.ravel(), y_score.ravel())
     roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
     
+    # aggregate fpr
+    all_fpr = np.unique(np.concatenate([fpr[i] for i in range(n_classes)]))
+
+    # interpolate all ROC curves at this points
+    mean_tpr = np.zeros_like(all_fpr)
+    for i in range(n_classes):
+        mean_tpr += interp(all_fpr, fpr[i], tpr[i])
+
+    # average and compute AUC
+    mean_tpr /= n_classes
+
+    fpr["macro"] = all_fpr
+    tpr["macro"] = mean_tpr
+    roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
+
+    
     print("SVM analysis complete. Total runtime: {0} s".format(t2 - t0))
     
     return clf, fpr, tpr, roc_auc
@@ -158,19 +175,18 @@ if __name__ == "__main__":
     
     # TODO: Optimize for Carbon star classes/white dwarfs/brown dwarfs
     stellar_class = []
-    for c in subClass:
+    for c in subclass:
         stellar_class.append(c[0])
+    stellar_class = np.array(stellar_class)
    
     axLabels = ['$u-g$', '$g-r$', '$r-i$', '$i-z$'] #, '$u-r$', '$u-i$', '$u-z$',
                 #'$g-i$', '$g-z$', '$r-z$']
     
-    #CornerPlot(colordata,axLabels)
-    
+    #CornerPlot(colordata,stellar_class,axLabels)
+
     # split data into training and test sets
-    clr_train, clr_test, cls_train, cls_test = train_test_split(colordata,
-                                                                subclass,
-                                                                test_size=.5,
-                                                                random_state=0)
+    clr_train, clr_test, cls_train, cls_test = train_test_split(colordata, stellar_class,
+                                                                test_size=.5, random_state=0)
     
     clf, fpr, tpr, roc_auc = SVMAnalysis(clr_train, clr_test, cls_train, cls_test)
-
+    #SVMAnalysis(clr_train, clr_test, cls_train, cls_test)
