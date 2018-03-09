@@ -20,14 +20,13 @@ from sklearn.preprocessing import label_binarize
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.metrics import roc_curve, auc
 
-def CornerPlot(data,cat,labels):
-    # convert string class labels to color labels (for use w/ scatter)
-    # for now this is just what's in the sample data. this could be automated
-    # but I want to keep some control over the colors themselves.
-        
-    cdict = {'O':'blue','B':'lightskyblue','A':'white','F':'lightyellow',
+# globals
+cdict = {'O':'blue','B':'lightskyblue','A':'white','F':'lightyellow',
              'G':'yellow','K':'orange','M':'red','T':'brown','L':'saddlebrown',
              'C':'black','W':'purple'}
+
+def CornerPlot(data,cat,labels):
+    # convert string class labels to color labels (for use w/ scatter)
     
     colClass = []
     for c in cat:
