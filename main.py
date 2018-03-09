@@ -64,7 +64,6 @@ def GramMatrix(data):
     (m, n) = data.shape  # dimensionality and number of points, respectively
     
     # computationally cheaper way to compute Gram matrix
-    print("Computing Gram matrix...")
     gram = np.zeros((n, n))
     for i in range(n):
         for j in range(i + 1):
@@ -73,11 +72,12 @@ def GramMatrix(data):
     
     return gram
 
-def SVMclassifier(data,classes,score=False):
+def SVMAnalysis(X_train,X_test,y_train,y_test):
     print("Starting SVM classifier")
     t0 = time.time()
+    print("Computing Gram matrix...")
     
-    gram = GramMatrix(data.T)
+    gram_train = GramMatrix(X_train.T)
     
     t1 = time.time()
     print("Gram matrix complete. Time to complete: {0} ms".format(t1 - t0))
@@ -85,17 +85,17 @@ def SVMclassifier(data,classes,score=False):
     print("Training SVM...")
             
     clf = svm.SVC(kernel='precomputed')
-    clf.fit(gram, classes)
+    clf.fit(gram_train, y_train)
     
     t2 = time.time()
     print("SVM training complete. Training time for {0} points: {1} s"
-          .format(n, t2 - t1))
+          .format(len(X_train), t2 - t1))
     
     print("Scoring...")
-    score = clf.score(gram, classes)
+    score = clf.score(gram_train, y_train)
     t3 = time.time()
     print("Scoring complete. Classification time for {0} points: {1} s"
-          .format(n, t3- t2))
+          .format(len(X_train), t3- t2))
     print("Classifier score: {0}".format(score))
     print("SVM classification complete. Total runtime: {0} s".format(t3 - t0))
         
@@ -120,5 +120,5 @@ if __name__ == "__main__":
     clr_train, clr_test, cls_train, cls_test = train_test_split(colordata,
                                                                 subClass)
     
-    SVMclassifier(colordata,subClass)
+    SVMAnalysis(clr_train, clr_test, cls_train, cls_test)
 
