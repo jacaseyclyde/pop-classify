@@ -78,10 +78,14 @@ if __name__ == "__main__":
     
     colordata = np.array([u-g, g-r, r-i, i-z, u-r, u-i, u-z, g-i, g-z, r-z])
     
+    # TODO: Optimize for Carbon star classes/white dwarfs/brown dwarfs
+    stellar_class = []
+    for c in subClass:
+        stellar_class.append(c[0])
    
     axLabels = ['$u-g$', '$g-r$', '$r-i$', '$i-z$', '$u-r$', '$u-i$', '$u-z$',
                 '$g-i$', '$g-z$', '$r-z$']
     
-    CornerPlot(colordata,axLabels)
+    #CornerPlot(colordata,axLabels)
     
     #SVMclassifier(colordata,subClass)
