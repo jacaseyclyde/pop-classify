@@ -32,7 +32,7 @@ def writer(name, data):
     return writer
 
 # n = number of objects
-n = 100000
+n = 20000
 # s = SQL query
 s = "SELECT TOP {} \
         p.u,p.g,p.r,p.i,p.z,s.subClass \
