@@ -210,7 +210,7 @@ def SVMAnalysis(X_train,X_test,y_train,y_test):
     t2 = time.time()
     print("SVM analysis complete. Total runtime: {0} s".format(t2 - t0))
     
-    return clf, fpr, tpr, roc_auc
+    #return clf, fpr, tpr, roc_auc # can add this back in for debug/dev
     
 
 if __name__ == "__main__":
@@ -240,5 +240,5 @@ if __name__ == "__main__":
     clr_train, clr_test, cls_train, cls_test = train_test_split(colordata, stellar_class,
                                                                 test_size=.5, random_state=0)
     
-    clf, fpr, tpr, roc_auc = SVMAnalysis(clr_train, clr_test, cls_train, cls_test)
-    #SVMAnalysis(clr_train, clr_test, cls_train, cls_test)
+    #clf, fpr, tpr, roc_auc = SVMAnalysis(clr_train, clr_test, cls_train, cls_test)
+    SVMAnalysis(clr_train, clr_test, cls_train, cls_test)
