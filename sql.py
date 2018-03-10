@@ -3,13 +3,13 @@ automated SQL query to SDSS database for star data
 """
 
 # !pip install mechanize
-import mechanize
+import mechanicalsoup
 #from StringIO import StringIO
 
 # dr = [10,12,13,14] # only works for these dr{vals}
 dr = 14
 url = "http://skyserver.sdss.org/dr{}/en/tools/search/sql.aspx".format(dr)
-br = mechanize.Browser()
+br = mechanicalsoup.StatefulBrowser()
 
 def SDSS_select(sql):
     '''
@@ -18,11 +18,11 @@ def SDSS_select(sql):
     source: http://balbuceosastropy.blogspot.com/2013/10/an-easy-way-to-make-sql-queries-from.html
     '''
     br.open(url)
-    br.select_form(name="sql")
+    br.select_form("[name=sql]")
     br['cmd'] = sql
-    br['format']=['csv']
-    response = br.submit()
-    return response.get_data()
+    br["format"]="csv"
+    response = br.submit_selected()
+    return response.text
     
 def writer(name, data):
     # writes data to a file
@@ -43,6 +43,7 @@ s = "SELECT TOP {} \
     AND s.Class = 'STAR'".format(n)
 
 SDSS = SDSS_select(s)
+
 #print SDSS
 filename = 'data.csv'
 writer(filename, SDSS)
