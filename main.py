@@ -42,6 +42,7 @@ if not os.path.exists('./out/png'):
 
 def CornerPlot(data,cat,labels):
     # convert string class labels to color labels (for use w/ scatter)
+    print("Creating corner plots...")
     
     colClass = []
     for c in cat:
@@ -53,7 +54,7 @@ def CornerPlot(data,cat,labels):
     nAx = len(data)
     
     fig1, ax1 = plt.subplots(nAx - 1, nAx - 1, sharex=True, sharey=True)
-    fig1.set_size_inches(12,12)
+    fig1.set_size_inches(4 * (nAx - 1), 4 * (nAx - 1))
     
     ax1[0,0].set_xticklabels([])
     ax1[0,0].set_yticklabels([])
@@ -64,7 +65,7 @@ def CornerPlot(data,cat,labels):
                 ax1[i, j].axis('off')
                 
             else:
-                ax1[i, j].scatter(colordata[j], colordata[i + 1], c=colClass, s=50)
+                ax1[i, j].scatter(data[j], data[i + 1], c=colClass, s=50)
                 
             if j == 0:
                 ax1[i, j].set_ylabel(labels[i + 1])
@@ -77,6 +78,8 @@ def CornerPlot(data,cat,labels):
     fig1.show()
     fig1.savefig('./out/pdf/color_corner.pdf')
     fig1.savefig('./out/png/color_corner.png')
+    
+    print("Corner plots complete!")
 
 def GramMatrix(data):
     (m, n) = data.shape  # dimensionality and number of points, respectively
@@ -172,7 +175,7 @@ def SVMAnalysis(X_train,X_test,y_train,y_test):
     tpr["macro"] = mean_tpr
     roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
     
-    plt.figure(figsize=(12,12))
+    fig1 = plt.figure(figsize=(12,12))
     plt.plot(fpr['micro'], tpr['micro'], label='micro-average ROC curve (area = {0:0.2f})'
              .format(roc_auc["micro"]), color='deeppink', linestyle=':',
              linewidth=4)
@@ -198,10 +201,11 @@ def SVMAnalysis(X_train,X_test,y_train,y_test):
     plt.ylabel('True Positive Rate')
     plt.title('Stellar Class Receiver Operating Characteristics: Support Vector Machine')
     plt.legend(loc="lower right")
+    
     plt.show()
     
-    plt.savefig('./out/pdf/svm_roc.pdf')
-    plt.savefig('./out/png/svm_roc.png')
+    fig1.savefig('./out/pdf/svm_roc.pdf')
+    fig1.savefig('./out/png/svm_roc.png')
     
     t2 = time.time()
     print("SVM analysis complete. Total runtime: {0} s".format(t2 - t0))
@@ -211,12 +215,16 @@ def SVMAnalysis(X_train,X_test,y_train,y_test):
 
 if __name__ == "__main__":
     # Import the data in 2 seperate stmts b/c genfromtxt doesnt like multityping
+    print("Importing data...")
     u, g, r, i, z = np.genfromtxt('data.csv', delimiter=',', skip_header=2,
                                   usecols=(0,1,2,3,4)).T
     subclass = np.genfromtxt('data.csv', delimiter=',',skip_header=2,usecols=5,
                              dtype=str)
+    print("Import complete!")
     
-    colordata = np.array([u-g, g-r, r-i, i-z]).T #, u-r, u-i, u-z, g-i, g-z, r-z])
+    print("Preprocessing...")
+    colordata = np.array([u-g, g-r, r-i, i-z]).T
+    print("Complete!")
     
     # TODO: Optimize for Carbon star classes/white dwarfs/brown dwarfs
     stellar_class = []
@@ -224,10 +232,9 @@ if __name__ == "__main__":
         stellar_class.append(c[0])
     stellar_class = np.array(stellar_class)
    
-    axLabels = ['$u-g$', '$g-r$', '$r-i$', '$i-z$'] #, '$u-r$', '$u-i$', '$u-z$',
-                #'$g-i$', '$g-z$', '$r-z$']
+    axLabels = ['$u-g$', '$g-r$', '$r-i$', '$i-z$']
     
-    #CornerPlot(colordata,stellar_class,axLabels)
+    CornerPlot(colordata.T,stellar_class,axLabels)
 
     # split data into training and test sets
     clr_train, clr_test, cls_train, cls_test = train_test_split(colordata, stellar_class,
