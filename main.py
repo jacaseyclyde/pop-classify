@@ -226,6 +226,7 @@ if __name__ == "__main__":
     colordata = np.array([u-g, g-r, r-i, i-z]).T
     print("Complete!")
     
+    # Plot data along each set of axes
     # TODO: Optimize for Carbon star classes/white dwarfs/brown dwarfs
     stellar_class = []
     for c in subclass:
@@ -238,7 +239,7 @@ if __name__ == "__main__":
 
     # split data into training and test sets
     clr_train, clr_test, cls_train, cls_test = train_test_split(colordata, stellar_class,
-                                                                test_size=.5, random_state=0)
+                                                                test_size=.5, random_state=1992)
     
     #clf, fpr, tpr, roc_auc = SVMAnalysis(clr_train, clr_test, cls_train, cls_test)
     SVMAnalysis(clr_train, clr_test, cls_train, cls_test)
