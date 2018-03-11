@@ -14,6 +14,8 @@ import numpy as np
 from scipy import interp
 
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import seaborn as sns
 
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier
@@ -23,15 +25,9 @@ from sklearn.preprocessing import label_binarize
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.metrics import roc_curve, auc
 
-
-from itertools import cycle
-
 # globals
-cdict = {'O': 'blue', 'B': 'lightskyblue', 'A': 'white', 'F': 'lightyellow',
-         'G': 'yellow', 'K': 'orange', 'M': 'red', 'T': 'brown',
-         'L': 'saddlebrown', 'C': 'black', 'W': 'purple'}
-
 ckeys = ['O', 'B', 'A', 'F', 'G', 'K', 'M', 'T', 'L', 'C', 'W']
+cdict = dict(zip(ckeys, sns.color_palette('Set2', len(ckeys))))
 
 # init data save locations
 if not os.path.exists('./out'):
@@ -44,13 +40,13 @@ if not os.path.exists('./out/png'):
     os.makedirs('./out/png')
 
 
-def CornerPlot(data, cat, labels):
+def CornerPlot(data, cat, labels, dataAmt, filename):
     # convert string class labels to color labels (for use w/ scatter)
-    print("Creating corner plots...")
+    print("Creating corner plot of {0} data...".format(dataAmt))
 
     colClass = []
     for c in cat:
-        colClass.append(cdict[c[0]])
+        colClass.append(cdict[c])
 
     colClass = np.array(colClass)
 
@@ -58,6 +54,8 @@ def CornerPlot(data, cat, labels):
     nAx = len(data)
 
     fig1, ax1 = plt.subplots(nAx - 1, nAx - 1, sharex=True, sharey=True)
+    fig1.suptitle('color-color Corner Plot: {0} Data'.format(dataAmt),
+                  fontsize=16)
     fig1.set_size_inches(4 * (nAx - 1), 4 * (nAx - 1))
 
     ax1[0, 0].set_xticklabels([])
@@ -78,9 +76,17 @@ def CornerPlot(data, cat, labels):
                 ax1[i, j].set_xlabel(labels[j])
 
     fig1.subplots_adjust(hspace=0, wspace=0)
+
+    recs = []
+    for i in range(0, len(ckeys)):
+        recs.append(mpatches.Circle((0, 0), radius=50, fc=cdict[ckeys[i]]))
+
+    ax1[0, nAx - 2].legend(recs, ckeys, loc="upper right", ncol=2)
+
     fig1.show()
-    fig1.savefig('./out/pdf/color_corner.pdf')
-    fig1.savefig('./out/png/color_corner.png')
+
+    fig1.savefig('./out/pdf/{0}.pdf'.format(filename))
+    fig1.savefig('./out/png/{0}.png'.format(filename))
 
     print("Corner plots complete!")
 
@@ -132,16 +138,18 @@ def ROC(clfFn, X_train, X_test, y_train, y_test, clfType, shortType):
              .format(roc_auc["macro"]), color='navy', linestyle=':',
              linewidth=4)
 
-#    colors = cycle([(0., 73./255., 73./255.), (255./255., 182./255., 119./255.),
-#                    (73./255., 0./255., 146./255.), (182./255., 109./255., 255./255.),
-#                    (109./255., 182./255., 255./255.), (182./255., 219./255., 255./255.),
-#                    (146./255., 0., 0.), (146./255., 73./255., 0.),
-#                    (36./255., 255./255., 36./255.), (255./255., 255./255., 109./255.),
-#                    (0., 0., 0.)])
-    for i, color in zip(range(n_classes), ckeys):
-        plt.plot(fpr[i], tpr[i], color=cdict[color], lw=2,
-                 label='Class {0} Stars (area = {1:0.2f})'
-                 .format(y_unique[i], roc_auc[i]))
+    for i in range(n_classes):
+        label = ''
+        if y_unique[i] == 'W':
+            label = 'White Dwarf  (area = {0:0.3f})'.format(roc_auc[i])
+        elif y_unique[i] == 'C':
+            label = 'Carbon Star  (area = {0:0.3f})'.format(roc_auc[i])
+        else:
+            label = 'Class {0} Stars (area = {1:0.3f})'.format(y_unique[i],
+                                                               roc_auc[i])
+
+        plt.plot(fpr[i], tpr[i], color=cdict[y_unique[i]], lw=2,
+                 label=label)
 
     plt.plot([0, 1], [0, 1], 'k--', lw=2)
     plt.xlim([0.0, 1.0])
@@ -294,7 +302,7 @@ if __name__ == "__main__":
 
     axLabels = ['$u-g$', '$g-r$', '$r-i$', '$i-z$']
 
-    # CornerPlot(colordata.T,stellar_class,axLabels)
+    CornerPlot(colordata.T, stellar_class, axLabels, 'All', 'color_corner')
 
     # split data into training and test sets
     clr_train, clr_test, cls_train, cls_test = train_test_split(colordata,
@@ -302,6 +310,10 @@ if __name__ == "__main__":
                                                                 test_size=.5,
                                                                 random_state=0)
 
+    # Plot the training and test sets - just in case it's a weird split
+    # CornerPlot(clr_train.T, cls_train, axLabels, 'Training', 'train_corner')
+    # CornerPlot(clr_test.T, cls_test, axLabels, 'Test', 'test_corner')
+
     SVMAnalysis(clr_train, clr_test, cls_train, cls_test)
-    print("==================================================================")
+    # print("==================================================================")
     # RandForestAnalysis(clr_train, clr_test, cls_train, cls_test)
