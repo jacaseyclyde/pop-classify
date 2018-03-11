@@ -144,7 +144,7 @@ def ROC(clfFn,X_train,X_test,y_train,y_test,clfType,shortType):
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('Stellar Class Receiver Operating Characteristics: {0}'.format(clfType))
+    plt.title('Stellar Type Classification ROCs: {0}'.format(clfType))
     plt.legend(loc="lower right")
     
     plt.show()
