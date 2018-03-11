@@ -46,7 +46,7 @@ bic = np.copy(aic)
 cv_types = ['spherical','tied','diag','full']
 for cov in range(4):
     for n in range(1,n_total+1):
-        gmm = GMM(n_components=n,covariance_type=cv_types[cov],random_state=0)
+        gmm = GMM(n_components=n,covariance_type=cv_types[cov],random_state=2)
         gmm.fit(colordata)
         aic[cov,n-1] = gmm.aic(colordata)
         bic[cov,n-1] = gmm.bic(colordata)
