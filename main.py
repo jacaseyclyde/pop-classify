@@ -155,7 +155,8 @@ def ROC(clfFn, X_train, X_test, y_train, y_test, clfType, shortType):
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('Stellar Type Classification ROC curves: {0}'.format(clfType))
+    plt.title('Stellar Type Classification ROC curves: {0}'.format(clfType),
+              fontsize=16)
     plt.legend(loc="lower right")
 
     plt.show()
