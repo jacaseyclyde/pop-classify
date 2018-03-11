@@ -220,7 +220,7 @@ def RandForestAnalysis(X_train,X_test,y_train,y_test):
     print("Initializing...")
     t0 = time.time()
     
-    clf = RandomForestClassifier(n_estimators=1000)
+    clf = RandomForestClassifier(n_estimators=10000)
     
     # Compute basic statistics for SVM
     print("Training Random Forest...")
@@ -250,7 +250,7 @@ def RandForestAnalysis(X_train,X_test,y_train,y_test):
     y_test = label_binarize(y_test, classes=y_unique)
     n_classes = len(y_unique)
     
-    classifier = OneVsRestClassifier(RandomForestClassifier(n_estimators=1000))
+    classifier = OneVsRestClassifier(RandomForestClassifier(n_estimators=10000))
     y_score = classifier.fit(X_train, y_train).predict_proba(X_test)
     
     fpr = dict()
@@ -335,6 +335,7 @@ if __name__ == "__main__":
     subclass = np.delete(subclass, i_extr, axis=0)
     
     print("Complete!")
+    print('==================================================================')
     
     # Plot data along each set of axes
     # TODO: Optimize for Carbon star classes/white dwarfs/brown dwarfs
