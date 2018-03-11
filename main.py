@@ -27,7 +27,9 @@ from sklearn.metrics import roc_curve, auc
 
 # globals
 ckeys = ['O', 'B', 'A', 'F', 'G', 'K', 'M', 'T', 'L', 'C', 'W']
-cdict = dict(zip(ckeys, sns.color_palette('Set2', len(ckeys))))
+cols = ['#006D82', '#82139F', '#005AC7', '#009FF9', '#F978F9', '#13D2DC',
+        '#AA093B', '#F97850', '#09B45A', '#EFEF31', '#9FF982', '#F9E6BD']
+cdict = dict(zip(ckeys, sns.color_palette(cols, len(ckeys))))
 
 # init data save locations
 if not os.path.exists('./out'):
@@ -83,7 +85,7 @@ def CornerPlot(data, cat, labels, dataAmt, filename):
 
     ax1[0, nAx - 2].legend(recs, ckeys, loc="upper right", ncol=2)
 
-    fig1.show()
+    plt.show()
 
     fig1.savefig('./out/pdf/{0}.pdf'.format(filename))
     fig1.savefig('./out/png/{0}.png'.format(filename))
@@ -128,13 +130,13 @@ def ROC(clfFn, X_train, X_test, y_train, y_test, clfType, shortType):
 
     fig1 = plt.figure(figsize=(12, 12))
     plt.plot(fpr['micro'], tpr['micro'],
-             label='micro-average ROC curve (area = {0:0.2f})'
-             .format(roc_auc["micro"]), color='deeppink', linestyle=':',
+             label='micro-average ROC curve (area = {0:0.3f})'
+             .format(roc_auc["micro"]), color=cols[-1], linestyle=':',
              linewidth=4)
 
     plt.plot(fpr['macro'], tpr['macro'],
-             label='macro-average ROC curve (area = {0:0.2f})'
-             .format(roc_auc["macro"]), color='navy', linestyle=':',
+             label='macro-average ROC curve (area = {0:0.3f})'
+             .format(roc_auc["macro"]), color=cols[-2], linestyle=':',
              linewidth=4)
 
     for i in range(n_classes):
@@ -239,7 +241,7 @@ def RandForestAnalysis(X_train, X_test, y_train, y_test):
     print("Initializing...")
     t0 = time.time()
 
-    clf = RandomForestClassifier(n_estimators=10000)
+    clf = RandomForestClassifier(n_estimators=1000)
 
     # Compute basic statistics for SVM
     print("Training Random Forest...")
@@ -262,7 +264,7 @@ def RandForestAnalysis(X_train, X_test, y_train, y_test):
     print("Classifier score: {0}".format(score))
 
     # Generate graphs/data for analysis
-    ROC(RandomForestClassifier(n_estimators=10000), X_train, X_test, y_train,
+    ROC(RandomForestClassifier(n_estimators=1000), X_train, X_test, y_train,
         y_test, "Random Forest", 'rf')
 
     t2 = time.time()
@@ -311,9 +313,9 @@ if __name__ == "__main__":
                                                                 random_state=0)
 
     # Plot the training and test sets - just in case it's a weird split
-    # CornerPlot(clr_train.T, cls_train, axLabels, 'Training', 'train_corner')
-    # CornerPlot(clr_test.T, cls_test, axLabels, 'Test', 'test_corner')
+    CornerPlot(clr_train.T, cls_train, axLabels, 'Training', 'train_corner')
+    CornerPlot(clr_test.T, cls_test, axLabels, 'Test', 'test_corner')
 
     SVMAnalysis(clr_train, clr_test, cls_train, cls_test)
-    # print("==================================================================")
-    # RandForestAnalysis(clr_train, clr_test, cls_train, cls_test)
+    print("==================================================================")
+    RandForestAnalysis(clr_train, clr_test, cls_train, cls_test)
