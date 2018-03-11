@@ -150,8 +150,8 @@ def SVMAnalysis(X_train,X_test,y_train,y_test):
     y_test = label_binarize(y_test, classes=y_unique)
     n_classes = len(y_unique)
     
-    classifier = OneVsRestClassifier(svm.SVC(kernel='precomputed'))
-    y_score = classifier.fit(gram_train, y_train).decision_function(gram_test)
+    clf = OneVsRestClassifier(svm.SVC(kernel='precomputed'))
+    y_score = clf.fit(gram_train, y_train).decision_function(gram_test)
     
     fpr = dict()
     tpr = dict()
@@ -250,8 +250,8 @@ def RandForestAnalysis(X_train,X_test,y_train,y_test):
     y_test = label_binarize(y_test, classes=y_unique)
     n_classes = len(y_unique)
     
-    classifier = OneVsRestClassifier(RandomForestClassifier(n_estimators=10000))
-    y_score = classifier.fit(X_train, y_train).predict_proba(X_test)
+    clf = OneVsRestClassifier(RandomForestClassifier(n_estimators=10000))
+    y_score = clf.fit(X_train, y_train).predict_proba(X_test)
     
     fpr = dict()
     tpr = dict()
