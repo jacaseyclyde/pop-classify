@@ -223,7 +223,7 @@ def RandForestAnalysis(X_train,X_test,y_train,y_test):
     print("Initializing...")
     t0 = time.time()
     
-    clf = RandomForestClassifier(n_estimators=100)
+    clf = RandomForestClassifier(n_estimators=10000)
     
     # Compute basic statistics for SVM
     print("Training Random Forest...")
@@ -246,7 +246,7 @@ def RandForestAnalysis(X_train,X_test,y_train,y_test):
     print("Classifier score: {0}".format(score))
     
     # Generate graphs/data for analysis
-    ROC(RandomForestClassifier(n_estimators=100),X_train,X_test,y_train,y_test,"Random Forest",'rf')
+    ROC(RandomForestClassifier(n_estimators=10000),X_train,X_test,y_train,y_test,"Random Forest",'rf')
     
     t2 = time.time()
     print("Random Forest analysis complete. Total runtime: {0} s".format(t2 - t0))
