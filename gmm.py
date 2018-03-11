@@ -32,19 +32,20 @@ stellar_class = np.array(stellar_class)
 # split training / test data
 clr_train, clr_test, cls_train, cls_test = train_test_split(colordata, stellar_class,
                                                     test_size=.5, random_state=0)
-
+"""
 # basic setup for GMM, plotting u-g vs g-r to visualize
 gmm = GMM(n_components=4).fit(colordata)
 labels = gmm.predict(colordata)
 plt.figure(figsize=(10,10))
 plt.scatter(colordata[:,0],colordata[:,1],c=labels)
-
+"""
 # calculate AIC and BIC for each covariance type and n_component to optimize fit
-aic = np.zeros((4,20))
+n_total = 50
+aic = np.zeros((4,n_total))
 bic = np.copy(aic)
 cv_types = ['spherical','tied','diag','full']
 for cov in range(4):
-    for n in range(1,21):
+    for n in range(1,n_total+1):
         gmm = GMM(n_components=n,covariance_type=cv_types[cov])
         gmm.fit(colordata)
         aic[cov,n-1] = gmm.aic(colordata)
@@ -52,14 +53,16 @@ for cov in range(4):
 
 # plot to evaluate
 fig, axes = plt.subplots(nrows=2, ncols=2)
-fig.set_size_inches(10,10)
+fig.set_size_inches(12,12)
 k = 0
 for a in range(2):
     for b in range(2):
         axes[a,b].set_title(cv_types[k])
-        axes[a,b].plot(range(1,21),aic[k,:],label='AIC')
-        axes[a,b].plot(range(1,21),bic[k,:],label='BIC')
-        axes[a,b].set_xlabel='n_components'
-        axes[a,b].set_ylabel='information criterion'
+        axes[a,b].plot(range(1,n_total+1),aic[k,:],label='AIC')
+        axes[a,b].plot(range(1,n_total+1),bic[k,:],label='BIC')
+        if a == 1:
+            axes[a,b].set_xlabel('n_components')
+        if b == 0:
+            axes[a,b].set_ylabel('information criterion')
         axes[a,b].legend()
         k += 1
