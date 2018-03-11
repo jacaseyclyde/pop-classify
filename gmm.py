@@ -46,7 +46,7 @@ bic = np.copy(aic)
 cv_types = ['spherical','tied','diag','full']
 for cov in range(4):
     for n in range(1,n_total+1):
-        gmm = GMM(n_components=n,covariance_type=cv_types[cov])
+        gmm = GMM(n_components=n,covariance_type=cv_types[cov],random_state=0)
         gmm.fit(colordata)
         aic[cov,n-1] = gmm.aic(colordata)
         bic[cov,n-1] = gmm.bic(colordata)
@@ -66,3 +66,5 @@ for a in range(2):
             axes[a,b].set_ylabel('information criterion')
         axes[a,b].legend()
         k += 1
+print "Optimal covariance type = 'full'"
+print "Minimum n-component value = {}".format(np.argmin(bic[3,:]))
