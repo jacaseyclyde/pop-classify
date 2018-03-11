@@ -224,6 +224,13 @@ if __name__ == "__main__":
     
     print("Preprocessing...")
     colordata = np.array([u-g, g-r, r-i, i-z]).T
+    
+    # check for extreme outliers with magnitude differences greater than 100
+    i_extr = np.where(np.logical_or.reduce(np.abs(colordata) > 100, axis=1))
+    
+    colordata = np.delete(colordata, i_extr, axis=0)
+    subclass = np.delete(subclass, i_extr, axis=0)
+    
     print("Complete!")
     
     # Plot data along each set of axes
