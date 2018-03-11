@@ -56,8 +56,8 @@ def CornerPlot(data,cat,labels):
     fig1, ax1 = plt.subplots(nAx - 1, nAx - 1, sharex=True, sharey=True)
     fig1.set_size_inches(4 * (nAx - 1), 4 * (nAx - 1))
     
-    #ax1[0,0].set_xticklabels([])
-    #ax1[0,0].set_yticklabels([])
+    ax1[0,0].set_xticklabels([])
+    ax1[0,0].set_yticklabels([])
     
     for i in range(nAx - 1):
         for j in range(nAx - 1):
@@ -249,4 +249,4 @@ if __name__ == "__main__":
                                                                 test_size=.5, random_state=0)
     
     #clf, fpr, tpr, roc_auc = SVMAnalysis(clr_train, clr_test, cls_train, cls_test)
-    #SVMAnalysis(clr_train, clr_test, cls_train, cls_test)
+    SVMAnalysis(clr_train, clr_test, cls_train, cls_test)
