@@ -93,11 +93,10 @@ def CornerPlot(data, cat, labels, dataAmt, filename):
 
 def ROC(clfFn, X_train, X_test, y_train, y_test, clfType, shortType):
     print("Generating ROC Curves...")
-    y_unique = np.unique(np.concatenate((y_train, y_test)))
 
-    y_train = label_binarize(y_train, classes=y_unique)
-    y_test = label_binarize(y_test, classes=y_unique)
-    n_classes = len(y_unique)
+    y_train = label_binarize(y_train, classes=ckeys)
+    y_test = label_binarize(y_test, classes=ckeys)
+    n_classes = len(ckeys)
 
     clf = OneVsRestClassifier(clfFn)
     y_score = clf.fit(X_train, y_train).predict_proba(X_test)
@@ -140,15 +139,15 @@ def ROC(clfFn, X_train, X_test, y_train, y_test, clfType, shortType):
 
     for i in range(n_classes):
         label = ''
-        if y_unique[i] == 'W':
+        if ckeys[i] == 'W':
             label = 'White Dwarf  (area = {0:0.3f})'.format(roc_auc[i])
-        elif y_unique[i] == 'C':
+        elif ckeys[i] == 'C':
             label = 'Carbon Star  (area = {0:0.3f})'.format(roc_auc[i])
         else:
-            label = 'Class {0} Stars (area = {1:0.3f})'.format(y_unique[i],
+            label = 'Class {0} Stars (area = {1:0.3f})'.format(ckeys[i],
                                                                roc_auc[i])
 
-        plt.plot(fpr[i], tpr[i], color=cdict[y_unique[i]], lw=2,
+        plt.plot(fpr[i], tpr[i], color=cdict[ckeys[i]], lw=2,
                  label=label)
 
     plt.plot([0, 1], [0, 1], 'k--', lw=2)
