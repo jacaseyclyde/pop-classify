@@ -19,10 +19,13 @@ import seaborn as sns
 
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier
+
 from sklearn.mixture import GaussianMixture
 from sklearn.naive_bayes import GaussianNB
 
 from astroML.classification import GMMBayes
+
+from sklearn.neighbors import KNeighborsClassifier
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import label_binarize
@@ -414,6 +417,43 @@ def GMMBayesAnalysis(X_train, X_test, y_train, y_test):
           .format(t2 - t0))
     
 
+def knneighbors(neighbors, wweights, clr_train, clr_test, cls_train, cls_test):
+    print('K-Nearest Neighbors Classification')
+    t0 = time.time()
+    # n_neighbors = number of neighbors by which selection is made
+    # weights = 'uniform' where all points are weighed equally or 'distance'
+    # where points are weighed as an inverse of distance from test point
+    neigh = KNeighborsClassifier(n_neighbors=neighbors, weights=wweights)
+
+    print('Training')
+    t1 = time.time()
+    neigh.fit(clr_train, cls_train)
+    t2 = time.time()
+
+    t_train = t2-t1
+    print('Training complete. Time for {0} points was {1} s'
+          .format(len(clr_train), t_train))
+
+    print('Scoring')
+    t1 = time.time()
+    score = neigh.score(clr_test, cls_test)
+    t2 = time.time()
+
+    t_score = t2-t1
+    print('Scoring complete. Time for {0} points was {1} s'
+          .format(len(clr_test), t_score))
+    print("Classifier score: {0}".format(score))
+
+    # Analysis Graph
+    ROC(KNeighborsClassifier(neighbors, wweights), clr_train, clr_test,
+        cls_train, cls_test, "K-Nearest Neighbors-{0} weighting"
+        .format(wweights), 'knn')
+
+    tf = time.time()
+
+    print('K-Nearest Neighbors Complete. Runtime {0} s.'.format(tf-t0))
+
+
 if __name__ == "__main__":
     # Import the data in 2 stmts b/c genfromtxt doesnt like multi-typing
     print("Importing data...")
@@ -459,7 +499,15 @@ if __name__ == "__main__":
     #SVMAnalysis(clr_train, clr_test, cls_train, cls_test)
     print("==================================================================")
     #RandForestAnalysis(clr_train, clr_test, cls_train, cls_test)
+    print("==================================================================")
     GMM32Analysis(clr_train, clr_test, cls_train, cls_test)
+    print("==================================================================")
     GMM11Analysis(clr_train, clr_test, cls_train, cls_test)
+    print("==================================================================")
     GNBAnalysis(clr_train, clr_test, cls_train, cls_test)
+    print("==================================================================")
     #GMMBayesAnalysis(clr_train, clr_test, cls_train, cls_test)
+    print("==================================================================")
+    RandForestAnalysis(clr_train, clr_test, cls_train, cls_test)
+    print("==================================================================")
+    knneighbors(1000, 'distance', clr_train, clr_test, cls_train, cls_test)
