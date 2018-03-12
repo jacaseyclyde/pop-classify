@@ -345,7 +345,7 @@ def GMM11Analysis(X_train, X_test, y_train, y_test):
         y_test, "11-component Gaussian Mixture Model", 'GMM11')
 
     t2 = time.time()
-    print("GMM32 analysis complete. Total runtime: {0} s"
+    print("GMM11 analysis complete. Total runtime: {0} s"
           .format(t2 - t0))
 
 def GNBAnalysis(X_train, X_test, y_train, y_test):
@@ -355,7 +355,7 @@ def GNBAnalysis(X_train, X_test, y_train, y_test):
 
     clf = GaussianNB()
 
-    print("Training Naive Bayes...")
+    print("Training Gaussian Naive Bayes...")
     t1 = time.time()
     clf.fit(X_train, y_train)
     t2 = time.time()
@@ -376,7 +376,7 @@ def GNBAnalysis(X_train, X_test, y_train, y_test):
 
     # Generate graphs/data for analysis
     ROC(GaussianNB(), X_train, X_test, y_train,
-        y_test, "Gaussian Mixture Model", 'GNB')
+        y_test, "Gaussian Naive Bayes", 'GNB')
 
     t2 = time.time()
     print("GNB analysis complete. Total runtime: {0} s"
@@ -389,7 +389,7 @@ def GMMBayesAnalysis(X_train, X_test, y_train, y_test):
 
     clf = GMMBayes()
 
-    print("Training Naive Bayes...")
+    print("Training GMMBayes...")
     t1 = time.time()
     clf.fit(X_train, y_train)
     t2 = time.time()
