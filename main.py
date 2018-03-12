@@ -19,12 +19,9 @@ import seaborn as sns
 
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier
-
 from sklearn.mixture import GaussianMixture
 from sklearn.naive_bayes import GaussianNB
-
 from astroML.classification import GMMBayes
-
 from sklearn.neighbors import KNeighborsClassifier
 
 from sklearn.model_selection import train_test_split
@@ -280,12 +277,14 @@ def RandForestAnalysis(X_train, X_test, y_train, y_test):
 
     # return clf, fpr, tpr, roc_auc # can add this back in for debug/dev
 
+
 def GMM32Analysis(X_train, X_test, y_train, y_test):
     print("Starting 32-component Gaussian Mixture analysis")
     print("Initializing...")
     t0 = time.time()
 
-    clf = GaussianMixture(n_components=32,covariance_type='full',random_state=0)
+    clf = GaussianMixture(n_components=32, covariance_type='full',
+                          random_state=0)
 
     print("Training Gaussian Mixture Model...")
     t1 = time.time()
@@ -307,19 +306,22 @@ def GMM32Analysis(X_train, X_test, y_train, y_test):
     print("Classifier score: {0}".format(score))
 
     # Generate graphs/data for analysis
-    ROC(GaussianMixture(n_components=32,covariance_type='full',random_state=0), X_train, X_test, y_train,
+    ROC(GaussianMixture(n_components=32, covariance_type='full',
+                        random_state=0), X_train, X_test, y_train,
         y_test, "32-component Gaussian Mixture Model", 'GMM32')
 
     t2 = time.time()
     print("GMM32 analysis complete. Total runtime: {0} s"
           .format(t2 - t0))
 
+
 def GMM11Analysis(X_train, X_test, y_train, y_test):
     print("Starting 11-component Gaussian Mixture analysis")
     print("Initializing...")
     t0 = time.time()
 
-    clf = GaussianMixture(n_components=11,covariance_type='full',random_state=0)
+    clf = GaussianMixture(n_components=11, covariance_type='full',
+                          random_state=0)
 
     print("Training Gaussian Mixture Model...")
     t1 = time.time()
@@ -341,12 +343,14 @@ def GMM11Analysis(X_train, X_test, y_train, y_test):
     print("Classifier score: {0}".format(score))
 
     # Generate graphs/data for analysis
-    ROC(GaussianMixture(n_components=11,covariance_type='full',random_state=0), X_train, X_test, y_train,
-        y_test, "11-component Gaussian Mixture Model", 'GMM11')
+    ROC(GaussianMixture(n_components=11, covariance_type='full',
+                        random_state=0), X_train, X_test, y_train, y_test,
+        "11-component Gaussian Mixture Model", 'GMM11')
 
     t2 = time.time()
     print("GMM32 analysis complete. Total runtime: {0} s"
           .format(t2 - t0))
+
 
 def GNBAnalysis(X_train, X_test, y_train, y_test):
     print("Starting Gaussian Naive Bayesian analysis")
@@ -382,6 +386,7 @@ def GNBAnalysis(X_train, X_test, y_train, y_test):
     print("GNB analysis complete. Total runtime: {0} s"
           .format(t2 - t0))
 
+
 def GMMBayesAnalysis(X_train, X_test, y_train, y_test):
     print("Starting Gaussian Mixture Model Bayesian analysis")
     print("Initializing...")
@@ -415,7 +420,7 @@ def GMMBayesAnalysis(X_train, X_test, y_train, y_test):
     t2 = time.time()
     print("GMMBayes analysis complete. Total runtime: {0} s"
           .format(t2 - t0))
-    
+
 
 def knneighbors(neighbors, wweights, clr_train, clr_test, cls_train, cls_test):
     print('K-Nearest Neighbors Classification')
@@ -484,7 +489,7 @@ if __name__ == "__main__":
 
     axLabels = ['$u-g$', '$g-r$', '$r-i$', '$i-z$']
 
-    #CornerPlot(colordata.T, stellar_class, axLabels, 'All', 'color_corner')
+    CornerPlot(colordata.T, stellar_class, axLabels, 'All', 'color_corner')
 
     # split data into training and test sets
     clr_train, clr_test, cls_train, cls_test = train_test_split(colordata,
@@ -493,12 +498,12 @@ if __name__ == "__main__":
                                                                 random_state=0)
 
     # Plot the training and test sets - just in case it's a weird split
-    #CornerPlot(clr_train.T, cls_train, axLabels, 'Training', 'train_corner')
-    #CornerPlot(clr_test.T, cls_test, axLabels, 'Test', 'test_corner')
+    CornerPlot(clr_train.T, cls_train, axLabels, 'Training', 'train_corner')
+    CornerPlot(clr_test.T, cls_test, axLabels, 'Test', 'test_corner')
 
-    #SVMAnalysis(clr_train, clr_test, cls_train, cls_test)
+    SVMAnalysis(clr_train, clr_test, cls_train, cls_test)
     print("==================================================================")
-    #RandForestAnalysis(clr_train, clr_test, cls_train, cls_test)
+    RandForestAnalysis(clr_train, clr_test, cls_train, cls_test)
     print("==================================================================")
     GMM32Analysis(clr_train, clr_test, cls_train, cls_test)
     print("==================================================================")
@@ -506,8 +511,10 @@ if __name__ == "__main__":
     print("==================================================================")
     GNBAnalysis(clr_train, clr_test, cls_train, cls_test)
     print("==================================================================")
-    #GMMBayesAnalysis(clr_train, clr_test, cls_train, cls_test)
+    GMMBayesAnalysis(clr_train, clr_test, cls_train, cls_test)
     print("==================================================================")
     RandForestAnalysis(clr_train, clr_test, cls_train, cls_test)
     print("==================================================================")
     knneighbors(1000, 'distance', clr_train, clr_test, cls_train, cls_test)
+    
+    print('Analysis Complete!')
