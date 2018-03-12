@@ -19,6 +19,7 @@ import seaborn as sns
 
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import label_binarize
@@ -273,35 +274,43 @@ def RandForestAnalysis(X_train, X_test, y_train, y_test):
 
     # return clf, fpr, tpr, roc_auc # can add this back in for debug/dev
 
-def knneighbors(neighbors,wweights,clr_train,clr_test,cls_train,cls_test):
+
+def knneighbors(neighbors, wweights, clr_train, clr_test, cls_train, cls_test):
     print('K-Nearest Neighbors Classification')
     t0 = time.time()
-    #n_neighbors = number of neighbors by which selection is made
-    #weights = 'uniform' where all points are weighed equally or 'distance' where points are weighed as an inverse of distance from test point
-    neigh = KNeighborsClassifier(n_neighbors=neighbors, weights= wweights)
-    
+    # n_neighbors = number of neighbors by which selection is made
+    # weights = 'uniform' where all points are weighed equally or 'distance'
+    # where points are weighed as an inverse of distance from test point
+    neigh = KNeighborsClassifier(n_neighbors=neighbors, weights=wweights)
+
     print('Training')
     t1 = time.time()
-    neigh.fit(clr_train,cls_train)
+    neigh.fit(clr_train, cls_train)
     t2 = time.time()
-    
+
     t_train = t2-t1
-    print('Training complete. Time for {0} points was {1} s'.format(len(clr_train,),t_train))
-    
+    print('Training complete. Time for {0} points was {1} s'
+          .format(len(clr_train), t_train))
+
     print('Scoring')
     t1 = time.time()
-    score = neigh.score(clr_test,cls_test)
+    score = neigh.score(clr_test, cls_test)
     t2 = time.time()
-    
+
     t_score = t2-t1
-    print('Scoring complete. Time for {0} points was {1} s'.format(len(clr_test),t_score))
-    
-    #Analysis Graph
-    ROC(KNeighborsClassifier(neighbors, wweights),clr_train,clr_test,cls_train,cls_test,"K-Nearest Neighbors-{0} weighting".format(wweights),'knn')
-    
+    print('Scoring complete. Time for {0} points was {1} s'
+          .format(len(clr_test), t_score))
+    print("Classifier score: {0}".format(score))
+
+    # Analysis Graph
+    ROC(KNeighborsClassifier(neighbors, wweights), clr_train, clr_test,
+        cls_train, cls_test, "K-Nearest Neighbors-{0} weighting"
+        .format(wweights), 'knn')
+
     tf = time.time()
-    
+
     print('K-Nearest Neighbors Complete. Runtime {0} s.'.format(tf-t0))
+
 
 if __name__ == "__main__":
     # Import the data in 2 stmts b/c genfromtxt doesnt like multi-typing
@@ -333,7 +342,7 @@ if __name__ == "__main__":
 
     axLabels = ['$u-g$', '$g-r$', '$r-i$', '$i-z$']
 
-    #CornerPlot(colordata.T, stellar_class, axLabels, 'All', 'color_corner')
+    CornerPlot(colordata.T, stellar_class, axLabels, 'All', 'color_corner')
 
     # split data into training and test sets
     clr_train, clr_test, cls_train, cls_test = train_test_split(colordata,
@@ -342,10 +351,11 @@ if __name__ == "__main__":
                                                                 random_state=0)
 
     # Plot the training and test sets - just in case it's a weird split
-    #CornerPlot(clr_train.T, cls_train, axLabels, 'Training', 'train_corner')
-    #CornerPlot(clr_test.T, cls_test, axLabels, 'Test', 'test_corner')
+    CornerPlot(clr_train.T, cls_train, axLabels, 'Training', 'train_corner')
+    CornerPlot(clr_test.T, cls_test, axLabels, 'Test', 'test_corner')
 
-    #SVMAnalysis(clr_train, clr_test, cls_train, cls_test)
+    SVMAnalysis(clr_train, clr_test, cls_train, cls_test)
     print("==================================================================")
-    #RandForestAnalysis(clr_train, clr_test, cls_train, cls_test)
-    knneighbors(1000,'distance',clr_train,clr_test,cls_train,cls_test)
+    RandForestAnalysis(clr_train, clr_test, cls_train, cls_test)
+    print("==================================================================")
+    knneighbors(1000, 'distance', clr_train, clr_test, cls_train, cls_test)
