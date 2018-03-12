@@ -516,8 +516,6 @@ if __name__ == "__main__":
     print("==================================================================")
     GMMBayesAnalysis(clr_train, clr_test, cls_train, cls_test)
     print("==================================================================")
-    RandForestAnalysis(clr_train, clr_test, cls_train, cls_test)
-    print("==================================================================")
     knneighbors(1000, 'distance', clr_train, clr_test, cls_train, cls_test)
     
     print('Analysis Complete!')
