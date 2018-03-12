@@ -9,6 +9,7 @@ Authors:
 """
 import time
 import os
+import warnings
 
 import numpy as np
 from scipy import interp
@@ -28,6 +29,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import label_binarize
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.metrics import roc_curve, auc
+
+warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 # globals
 ckeys = ['O', 'B', 'A', 'F', 'G', 'K', 'M', 'T', 'L', 'C', 'W']
