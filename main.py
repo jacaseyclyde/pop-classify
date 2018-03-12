@@ -135,12 +135,12 @@ def ROC(clfFn, X_train, X_test, y_train, y_test, clfType, shortType):
     fig1 = plt.figure(figsize=(12, 12))
     plt.plot(fpr['micro'], tpr['micro'],
              label='micro-average ROC curve (area = {0:0.3f})'
-             .format(roc_auc["micro"]), color=cols[-1], linestyle=':',
+             .format(roc_auc["micro"]), color='deeppink', linestyle=':',
              linewidth=4)
 
     plt.plot(fpr['macro'], tpr['macro'],
              label='macro-average ROC curve (area = {0:0.3f})'
-             .format(roc_auc["macro"]), color=cols[-2], linestyle=':',
+             .format(roc_auc["macro"]), color='navy', linestyle=':',
              linewidth=4)
 
     for i in range(n_classes):
