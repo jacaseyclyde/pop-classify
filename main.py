@@ -30,7 +30,8 @@ from sklearn.preprocessing import label_binarize
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.metrics import roc_curve, auc
 
-warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 # globals
 ckeys = ['O', 'B', 'A', 'F', 'G', 'K', 'M', 'T', 'L', 'C', 'W']
@@ -521,8 +522,6 @@ if __name__ == "__main__":
     GNBAnalysis(clr_train, clr_test, cls_train, cls_test)
     print("==================================================================")
     GMMBayesAnalysis(clr_train, clr_test, cls_train, cls_test)
-    print("==================================================================")
-    RandForestAnalysis(clr_train, clr_test, cls_train, cls_test)
     print("==================================================================")
     knneighbors(1000, 'distance', clr_train, clr_test, cls_train, cls_test)
 
