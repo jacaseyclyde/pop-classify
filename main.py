@@ -9,6 +9,7 @@ Authors:
 """
 import time
 import os
+import warnings
 
 import numpy as np
 from scipy import interp
@@ -28,6 +29,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import label_binarize
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.metrics import roc_curve, auc
+
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # globals
 ckeys = ['O', 'B', 'A', 'F', 'G', 'K', 'M', 'T', 'L', 'C', 'W']
@@ -198,7 +201,8 @@ def SVMAnalysis(X_train, X_test, y_train, y_test):
     t2 = time.time()
 
     t_gram_train = t2 - t1
-    print("Training Gram matrix complete. Time to compute for {0} pts: {1} s"
+    print("Training Gram matrix complete. Time to compute for {0} pts: \
+          {1:0.3f} s"
           .format(len(X_train), t_gram_train))
 
     print("Computing test Gram matrix...")
@@ -207,7 +211,8 @@ def SVMAnalysis(X_train, X_test, y_train, y_test):
     t2 = time.time()
 
     t_gram_test = t2 - t1
-    print("Test Gram matrix complete. Time to compute for {0} points: {1} s"
+    print("Test Gram matrix complete. Time to compute for {0} points: \
+          2{1:0.3f} s"
           .format(len(X_test), t_gram_test))
 
     # Compute basic statistics for SVM
@@ -217,7 +222,7 @@ def SVMAnalysis(X_train, X_test, y_train, y_test):
     t2 = time.time()
 
     t_train = t2 - t1
-    print("SVM training complete. Training time for {0} points: {1} s"
+    print("SVM training complete. Training time for {0} points: {1:0.3f} s"
           .format(len(X_train), t_train))
 
     print("Scoring...")
@@ -226,16 +231,16 @@ def SVMAnalysis(X_train, X_test, y_train, y_test):
     t2 = time.time()
 
     t_test = t2 - t1
-    print("Scoring complete. Classification time for {0} points: {1} s"
+    print("Scoring complete. Classification time for {0} points: {1:0.3f} s"
           .format(len(X_train), t_test))
-    print("Classifier score: {0}".format(score))
+    print("Classifier score: {0:0.3f}".format(score))
 
     # Generate graphs/data for analysis
     ROC(svm.SVC(kernel='precomputed', probability=True), gram_train, gram_test,
         y_train, y_test, "Support Vector Machine", 'svm')
 
     t2 = time.time()
-    print("SVM analysis complete. Total runtime: {0} s".format(t2 - t0))
+    print("SVM analysis complete. Total runtime: {0:0.3f} s".format(t2 - t0))
 
     # return clf, fpr, tpr, roc_auc # can add this back in for debug/dev
 
@@ -254,7 +259,8 @@ def RandForestAnalysis(X_train, X_test, y_train, y_test):
     t2 = time.time()
 
     t_train = t2 - t1
-    print("Random Forest training complete. Training time for {0} pts: {1} s"
+    print("Random Forest training complete. Training time for {0} pts: \
+          {1:0.3f} s"
           .format(len(X_train), t_train))
 
     print("Scoring...")
@@ -263,16 +269,16 @@ def RandForestAnalysis(X_train, X_test, y_train, y_test):
     t2 = time.time()
 
     t_test = t2 - t1
-    print("Scoring complete. Classification time for {0} points: {1} s"
+    print("Scoring complete. Classification time for {0} points: {1:0.3f} s"
           .format(len(X_train), t_test))
-    print("Classifier score: {0}".format(score))
+    print("Classifier score: {0:0.3f}".format(score))
 
     # Generate graphs/data for analysis
     ROC(RandomForestClassifier(n_estimators=1000), X_train, X_test, y_train,
         y_test, "Random Forest", 'rf')
 
     t2 = time.time()
-    print("Random Forest analysis complete. Total runtime: {0} s"
+    print("Random Forest analysis complete. Total runtime: {0:0.3f} s"
           .format(t2 - t0))
 
     # return clf, fpr, tpr, roc_auc # can add this back in for debug/dev
@@ -292,7 +298,8 @@ def GMM32Analysis(X_train, X_test, y_train, y_test):
     t2 = time.time()
 
     t_train = t2 - t1
-    print("Gaussian Mixture training complete. Training time for {0} pts: {1} s"
+    print("Gaussian Mixture training complete. Training time for {0} pts: \
+          {1:0.3f} s"
           .format(len(X_train), t_train))
 
     print("Scoring...")
@@ -301,9 +308,9 @@ def GMM32Analysis(X_train, X_test, y_train, y_test):
     t2 = time.time()
 
     t_test = t2 - t1
-    print("Scoring complete. Classification time for {0} points: {1} s"
+    print("Scoring complete. Classification time for {0} points: {1:0.3f} s"
           .format(len(X_train), t_test))
-    print("Classifier score: {0}".format(score))
+    print("Classifier score: {0:0.3f}".format(score))
 
     # Generate graphs/data for analysis
     ROC(GaussianMixture(n_components=32, covariance_type='full',
@@ -311,7 +318,7 @@ def GMM32Analysis(X_train, X_test, y_train, y_test):
         y_test, "32-component Gaussian Mixture Model", 'GMM32')
 
     t2 = time.time()
-    print("GMM32 analysis complete. Total runtime: {0} s"
+    print("GMM32 analysis complete. Total runtime: {0:0.3f} s"
           .format(t2 - t0))
 
 
@@ -329,7 +336,8 @@ def GMM11Analysis(X_train, X_test, y_train, y_test):
     t2 = time.time()
 
     t_train = t2 - t1
-    print("Gaussian Mixture training complete. Training time for {0} pts: {1} s"
+    print("Gaussian Mixture training complete. Training time for {0} pts: \
+          {1:0.3f} s"
           .format(len(X_train), t_train))
 
     print("Scoring...")
@@ -338,9 +346,9 @@ def GMM11Analysis(X_train, X_test, y_train, y_test):
     t2 = time.time()
 
     t_test = t2 - t1
-    print("Scoring complete. Classification time for {0} points: {1} s"
+    print("Scoring complete. Classification time for {0} points: {1:0.3f} s"
           .format(len(X_train), t_test))
-    print("Classifier score: {0}".format(score))
+    print("Classifier score: {0:0.3f}".format(score))
 
     # Generate graphs/data for analysis
     ROC(GaussianMixture(n_components=11, covariance_type='full',
@@ -348,7 +356,7 @@ def GMM11Analysis(X_train, X_test, y_train, y_test):
         "11-component Gaussian Mixture Model", 'GMM11')
 
     t2 = time.time()
-    print("GMM11 analysis complete. Total runtime: {0} s"
+    print("GMM11 analysis complete. Total runtime: {0:0.3f} s"
           .format(t2 - t0))
 
 
@@ -365,7 +373,7 @@ def GNBAnalysis(X_train, X_test, y_train, y_test):
     t2 = time.time()
 
     t_train = t2 - t1
-    print("GNB training complete. Training time for {0} pts: {1} s"
+    print("GNB training complete. Training time for {0} pts: {1:0.3f} s"
           .format(len(X_train), t_train))
 
     print("Scoring...")
@@ -374,16 +382,16 @@ def GNBAnalysis(X_train, X_test, y_train, y_test):
     t2 = time.time()
 
     t_test = t2 - t1
-    print("Scoring complete. Classification time for {0} points: {1} s"
+    print("Scoring complete. Classification time for {0} points: {1:0.3f} s"
           .format(len(X_train), t_test))
-    print("Classifier score: {0}".format(score))
+    print("Classifier score: {0:0.3f}".format(score))
 
     # Generate graphs/data for analysis
     ROC(GaussianNB(), X_train, X_test, y_train,
         y_test, "Gaussian Naive Bayes", 'GNB')
 
     t2 = time.time()
-    print("GNB analysis complete. Total runtime: {0} s"
+    print("GNB analysis complete. Total runtime: {0:0.3f} s"
           .format(t2 - t0))
 
 
@@ -400,7 +408,7 @@ def GMMBayesAnalysis(X_train, X_test, y_train, y_test):
     t2 = time.time()
 
     t_train = t2 - t1
-    print("GMMBayes training complete. Training time for {0} pts: {1} s"
+    print("GMMBayes training complete. Training time for {0} pts: {1:0.3f} s"
           .format(len(X_train), t_train))
 
     print("Scoring...")
@@ -409,16 +417,16 @@ def GMMBayesAnalysis(X_train, X_test, y_train, y_test):
     t2 = time.time()
 
     t_test = t2 - t1
-    print("Scoring complete. Classification time for {0} points: {1} s"
+    print("Scoring complete. Classification time for {0} points: {1:0.3f} s"
           .format(len(X_train), t_test))
-    print("Classifier score: {0}".format(score))
+    print("Classifier score: {0:0.3f}".format(score))
 
     # Generate graphs/data for analysis
     ROC(GMMBayes(), X_train, X_test, y_train,
         y_test, "Gaussian Mixture Model Bayesian", 'GMMB')
 
     t2 = time.time()
-    print("GMMBayes analysis complete. Total runtime: {0} s"
+    print("GMMBayes analysis complete. Total runtime: {0:0.3f} s"
           .format(t2 - t0))
 
 
@@ -436,7 +444,7 @@ def knneighbors(neighbors, wweights, clr_train, clr_test, cls_train, cls_test):
     t2 = time.time()
 
     t_train = t2-t1
-    print('Training complete. Time for {0} points was {1} s'
+    print('Training complete. Time for {0} points was {1:0.3f} s'
           .format(len(clr_train), t_train))
 
     print('Scoring')
@@ -445,9 +453,9 @@ def knneighbors(neighbors, wweights, clr_train, clr_test, cls_train, cls_test):
     t2 = time.time()
 
     t_score = t2-t1
-    print('Scoring complete. Time for {0} points was {1} s'
+    print('Scoring complete. Time for {0} points was {1:0.3f} s'
           .format(len(clr_test), t_score))
-    print("Classifier score: {0}".format(score))
+    print("Classifier score: {0:0.3f}".format(score))
 
     # Analysis Graph
     ROC(KNeighborsClassifier(neighbors, wweights), clr_train, clr_test,
@@ -456,7 +464,7 @@ def knneighbors(neighbors, wweights, clr_train, clr_test, cls_train, cls_test):
 
     tf = time.time()
 
-    print('K-Nearest Neighbors Complete. Runtime {0} s.'.format(tf-t0))
+    print('K-Nearest Neighbors Complete. Runtime {0:0.3f} s.'.format(tf-t0))
 
 
 if __name__ == "__main__":
