@@ -18,11 +18,12 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import seaborn as sns
 
+from astroML.classification import GMMBayes
+
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.mixture import GaussianMixture
 from sklearn.naive_bayes import GaussianNB
-from astroML.classification import GMMBayes
 from sklearn.neighbors import KNeighborsClassifier
 
 from sklearn.model_selection import train_test_split
