@@ -26,7 +26,7 @@ from sklearn.mixture import GaussianMixture
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.preprocessing import label_binarize
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.metrics import roc_curve, auc
@@ -34,15 +34,24 @@ from sklearn.metrics import roc_curve, auc
 
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 
-# globals
+# =============================================================================
+# =============================================================================
+# # Globals/Init
+# =============================================================================
+# =============================================================================
 ckeys = ['O', 'B', 'A', 'F', 'G', 'K', 'M', 'T', 'L', 'C', 'W']
 cols = ['#006D82', '#82139F', '#005AC7', '#009FF9', '#F978F9', '#13D2DC',
         '#AA093B', '#F97850', '#09B45A', '#EFEF31', '#9FF982', '#F9E6BD']
 cdict = dict(zip(ckeys, sns.color_palette(cols, len(ckeys))))
 
+n_classes = len(ckeys)
+
 # init data save locations
 if not os.path.exists('./out'):
     os.makedirs('./out')
+
+if not os.path.exists('../pres/img'):
+    os.makedirs('../pres/img')
 
 if not os.path.exists('./out/pdf'):
     os.makedirs('./out/pdf')
@@ -50,11 +59,19 @@ if not os.path.exists('./out/pdf'):
 if not os.path.exists('./out/png'):
     os.makedirs('./out/png')
 
+# =============================================================================
+# =============================================================================
+# # Function Definitions
+# =============================================================================
+# =============================================================================
 
-def CornerPlot(data, cat, labels, dataAmt, filename):
+# =============================================================================
+# Analysis Functions
+# =============================================================================
+
+
+def corner_plot(data, cat, labels, data_amt, filename):
     # convert string class labels to color labels (for use w/ scatter)
-    print("Creating corner plot of {0} data...".format(dataAmt))
-
     colClass = []
     for c in cat:
         colClass.append(cdict[c])
@@ -65,7 +82,7 @@ def CornerPlot(data, cat, labels, dataAmt, filename):
     nAx = len(data)
 
     fig1, ax1 = plt.subplots(nAx - 1, nAx - 1, sharex=True, sharey=True)
-    fig1.suptitle('color-color Corner Plot: {0} Data'.format(dataAmt),
+    fig1.suptitle('color-color Corner Plot: {0} Data'.format(data_amt),
                   fontsize=16)
     fig1.set_size_inches(4 * (nAx - 1), 4 * (nAx - 1))
 
@@ -99,15 +116,10 @@ def CornerPlot(data, cat, labels, dataAmt, filename):
     fig1.savefig('./out/pdf/{0}.pdf'.format(filename))
     fig1.savefig('./out/png/{0}.png'.format(filename))
 
-    print("Corner plots complete!")
 
-
-def ROC(clfFn, X_train, X_test, y_train, y_test, clfType, shortType):
-    print("Generating ROC Curves...")
-
+def roc_calc(clfFn, X_train, X_test, y_train, y_test):
     y_train = label_binarize(y_train, classes=ckeys)
     y_test = label_binarize(y_test, classes=ckeys)
-    n_classes = len(ckeys)
 
     clf = OneVsRestClassifier(clfFn)
     y_score = clf.fit(X_train, y_train).predict_proba(X_test)
@@ -137,6 +149,11 @@ def ROC(clfFn, X_train, X_test, y_train, y_test, clfType, shortType):
     tpr["macro"] = mean_tpr
     roc_auc["macro"] = auc(fpr["macro"], tpr["macro"])
 
+    return tpr, fpr, roc_auc
+
+
+def roc_plot(tpr, fpr, roc_auc, clfType, shortType):
+    print('Plotting ROC curve...')
     fig1 = plt.figure(figsize=(12, 12))
     plt.plot(fpr['micro'], tpr['micro'],
              label='micro-average ROC curve (area = {0:0.3f})'
@@ -174,299 +191,306 @@ def ROC(clfFn, X_train, X_test, y_train, y_test, clfType, shortType):
 
     fig1.savefig('./out/pdf/{0}_roc.pdf'.format(shortType))
     fig1.savefig('./out/png/{0}_roc.png'.format(shortType))
+    fig1.savefig('../pres/img/{0}_roc.png'.format(shortType))
+
+    print('Plot complete!')
 
 
-def GramMatrix(data):
-    (m, n) = data.shape  # dimensionality and number of points, respectively
+def k_fold_analysis(func, X_train, y_train, name, s_name):
+    cv = StratifiedKFold(n_splits=5, random_state=0)
 
-    # computationally cheaper way to compute Gram matrix
-    gram = np.zeros((n, n))
-    for i in range(n):
-        for j in range(i + 1):
-            gram[i, j] = np.dot(data[:, i], data[:, j])
-            gram[j, i] = gram[i, j]
+    micro_tprs = []
+    macro_tprs = []
 
-    return gram
+    micro_aucs = []
+    macro_aucs = []
+
+    t_trains = []
+    t_tests = []
+    scores = []
+
+    mean_fpr = np.linspace(0, 1, 1000)
+
+    i = 0
+    for train, test in cv.split(X_train, y_train):
+        print("Fold {0}...".format(i))
+        tpr, fpr, roc_auc, t_train, t_test, score = func(X_train[train],
+                                                         X_train[test],
+                                                         y_train[train],
+                                                         y_train[test])
+
+        micro_tprs.append(interp(mean_fpr, fpr['micro'], tpr['micro']))
+        macro_tprs.append(interp(mean_fpr, fpr['macro'], tpr['macro']))
+
+        micro_aucs.append(roc_auc['micro'])
+        macro_aucs.append(roc_auc['macro'])
+
+        t_trains.append(t_train)
+        t_tests.append(t_test)
+        scores.append(score)
+
+        # Plot micro stats
+        plt.figure(0, figsize=(12, 12))
+        plt.plot(fpr['micro'], tpr['micro'], lw=1, alpha=0.3,
+                 label='ROC fold {0} (AUC = {1:.3f})'
+                 .format(i, roc_auc['micro']))
+
+        # Plot macro stats
+        plt.figure(1, figsize=(12, 12))
+        plt.plot(fpr['macro'], tpr['macro'], lw=1, alpha=0.3,
+                 label='ROC fold {0} (AUC = {1:.3f})'
+                 .format(i, roc_auc['macro']))
+
+        i += 1
+
+    # Micro
+    plt.figure(0)
+    plt.plot([0, 1], [0, 1], linestyle='--', lw=2,
+             color='k', alpha=.8)
+
+    mean_tpr = np.mean(micro_tprs, axis=0)
+    mean_tpr[-1] = 1.0
+    mean_auc = auc(mean_fpr, mean_tpr)
+    std_auc = np.std(micro_aucs)
+    plt.plot(mean_fpr, mean_tpr, color='b',
+             label=r'Mean ROC (AUC = {0:.3f} $\pm$ {1:.3f})'
+             .format(mean_auc, std_auc), lw=2, alpha=.8)
+
+    std_tpr = np.std(micro_tprs, axis=0)
+    tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+    tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+    plt.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2,
+                     label=r'$\pm$ 1 std. dev.')
+
+    plt.xlim([0., 1.0])
+    plt.ylim([0., 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Micro-averaged ROC curve: {0}'.format(name))
+    plt.legend(loc="lower right")
+
+    plt.savefig('./out/pdf/{0}_micro_roc.pdf'.format(s_name))
+    plt.savefig('./out/png/{0}_micro_roc.png'.format(s_name))
+    plt.savefig('../pres/img/{0}_micro_roc.png'.format(s_name))
+
+    # Macro
+    plt.figure(1)
+    plt.plot([0, 1], [0, 1], linestyle='--', lw=2,
+             color='k', alpha=.8)
+
+    mean_tpr = np.mean(macro_tprs, axis=0)
+    mean_tpr[-1] = 1.0
+    mean_auc = auc(mean_fpr, mean_tpr)
+    std_auc = np.std(macro_aucs)
+    plt.plot(mean_fpr, mean_tpr, color='b',
+             label=r'Mean ROC (AUC = {0:.3f} $\pm$ {1:.3f})'
+             .format(mean_auc, std_auc), lw=2, alpha=.8)
+
+    std_tpr = np.std(macro_tprs, axis=0)
+    tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
+    tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
+    plt.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2,
+                     label=r'$\pm$ 1 std. dev.')
+
+    plt.xlim([0., 1.0])
+    plt.ylim([0., 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Macro-averaged ROC curve: {0}'.format(name))
+    plt.legend(loc="lower right")
+
+    plt.savefig('./out/pdf/{0}_macro_roc.pdf'.format(s_name))
+    plt.savefig('./out/png/{0}_macro_roc.png'.format(s_name))
+    plt.savefig('../pres/img/{0}_macro_roc.png'.format(s_name))
+
+    plt.show()
+
+    return t_trains, t_tests, scores
 
 
-def SVMAnalysis(X_train, X_test, y_train, y_test):
-    print("Starting Support Vector Machine analysis")
-    print("Initializing...")
-    t0 = time.time()
+def svm_analysis(X_train, X_test, y_train, y_test):
 
     clf = svm.SVC(kernel='precomputed', probability=True)
 
     # Compute gram matrices for both sets
-    print("Computing training Gram matrix...")
     t1 = time.time()
-    gram_train = GramMatrix(X_train.T)
+    train = np.dot(X_train, X_train.T)
     t2 = time.time()
 
     t_gram_train = t2 - t1
-    print("Training Gram matrix complete. Time to compute for {0} pts: \
-          {1:0.3f} s"
-          .format(len(X_train), t_gram_train))
 
-    print("Computing test Gram matrix...")
     t1 = time.time()
-    gram_test = GramMatrix(X_test.T)
+    test = np.dot(X_test, X_train.T)
     t2 = time.time()
 
     t_gram_test = t2 - t1
-    print("Test Gram matrix complete. Time to compute for {0} points: \
-          2{1:0.3f} s"
-          .format(len(X_test), t_gram_test))
 
     # Compute basic statistics for SVM
-    print("Training SVM...")
     t1 = time.time()
-    clf.fit(gram_train, y_train)
+    clf.fit(train, y_train)
     t2 = time.time()
 
     t_train = t2 - t1
-    print("SVM training complete. Training time for {0} points: {1:0.3f} s"
-          .format(len(X_train), t_train))
 
-    print("Scoring...")
     t1 = time.time()
-    score = clf.score(gram_test, y_test)
+    score = clf.score(test, y_test)
     t2 = time.time()
 
     t_test = t2 - t1
-    print("Scoring complete. Classification time for {0} points: {1:0.3f} s"
-          .format(len(X_train), t_test))
-    print("Classifier score: {0:0.3f}".format(score))
+
+    t_train += t_gram_train
+    t_test += t_gram_test
 
     # Generate graphs/data for analysis
-    ROC(svm.SVC(kernel='precomputed', probability=True), gram_train, gram_test,
-        y_train, y_test, "Support Vector Machine", 'svm')
+    tpr, fpr, roc_auc = roc_calc(svm.SVC(kernel='precomputed',
+                                         probability=True), train, test,
+                                 y_train, y_test)
 
-    t2 = time.time()
-    print("SVM analysis complete. Total runtime: {0:0.3f} s".format(t2 - t0))
-
-    # return clf, fpr, tpr, roc_auc # can add this back in for debug/dev
+    return tpr, fpr, roc_auc, t_train, t_test, score
 
 
-def RandForestAnalysis(X_train, X_test, y_train, y_test):
-    print("Starting Random Forest analysis")
-    print("Initializing...")
-    t0 = time.time()
+def rand_forest_analysis(X_train, X_test, y_train, y_test):
+    n_est = 1000
 
-    clf = RandomForestClassifier(n_estimators=1000)
+    clf = RandomForestClassifier(n_estimators=n_est)
 
     # Compute basic statistics for SVM
-    print("Training Random Forest...")
     t1 = time.time()
     clf.fit(X_train, y_train)
     t2 = time.time()
 
     t_train = t2 - t1
-    print("Random Forest training complete. Training time for {0} pts: \
-          {1:0.3f} s"
-          .format(len(X_train), t_train))
 
-    print("Scoring...")
     t1 = time.time()
     score = clf.score(X_test, y_test)
     t2 = time.time()
 
     t_test = t2 - t1
-    print("Scoring complete. Classification time for {0} points: {1:0.3f} s"
-          .format(len(X_train), t_test))
-    print("Classifier score: {0:0.3f}".format(score))
 
     # Generate graphs/data for analysis
-    ROC(RandomForestClassifier(n_estimators=1000), X_train, X_test, y_train,
-        y_test, "Random Forest", 'rf')
+    tpr, fpr, roc_auc = roc_calc(RandomForestClassifier(n_estimators=n_est),
+                                 X_train, X_test, y_train, y_test)
 
-    t2 = time.time()
-    print("Random Forest analysis complete. Total runtime: {0:0.3f} s"
-          .format(t2 - t0))
-
-    # return clf, fpr, tpr, roc_auc # can add this back in for debug/dev
+    return tpr, fpr, roc_auc, t_train, t_test, score
 
 
-def GMM32Analysis(X_train, X_test, y_train, y_test):
-    print("Starting 32-component Gaussian Mixture analysis")
-    print("Initializing...")
-    t0 = time.time()
-
+def gmm_32_analysis(X_train, X_test, y_train, y_test):
     clf = GaussianMixture(n_components=32, covariance_type='full',
                           random_state=0)
 
-    print("Training Gaussian Mixture Model...")
     t1 = time.time()
     clf.fit(X_train, y_train)
     t2 = time.time()
 
     t_train = t2 - t1
-    print("Gaussian Mixture training complete. Training time for {0} pts: \
-          {1:0.3f} s"
-          .format(len(X_train), t_train))
 
-    print("Scoring...")
     t1 = time.time()
     score = clf.score(X_test, y_test)
     t2 = time.time()
 
     t_test = t2 - t1
-    print("Scoring complete. Classification time for {0} points: {1:0.3f} s"
-          .format(len(X_train), t_test))
-    print("Classifier score: {0:0.3f}".format(score))
 
     # Generate graphs/data for analysis
-    ROC(GaussianMixture(n_components=32, covariance_type='full',
-                        random_state=0), X_train, X_test, y_train,
-        y_test, "32-component Gaussian Mixture Model", 'GMM32')
+    tpr, fpr, roc_auc = roc_calc(GaussianMixture(n_components=32,
+                                                 covariance_type='full',
+                                                 random_state=0), X_train,
+                                 X_test, y_train, y_test)
 
-    t2 = time.time()
-    print("GMM32 analysis complete. Total runtime: {0:0.3f} s"
-          .format(t2 - t0))
+    return tpr, fpr, roc_auc, t_train, t_test, score
 
 
-def GMM11Analysis(X_train, X_test, y_train, y_test):
-    print("Starting 11-component Gaussian Mixture analysis")
-    print("Initializing...")
-    t0 = time.time()
-
+def gmm_11_analysis(X_train, X_test, y_train, y_test):
     clf = GaussianMixture(n_components=11, covariance_type='full',
                           random_state=0)
 
-    print("Training Gaussian Mixture Model...")
     t1 = time.time()
     clf.fit(X_train, y_train)
     t2 = time.time()
 
     t_train = t2 - t1
-    print("Gaussian Mixture training complete. Training time for {0} pts: \
-          {1:0.3f} s"
-          .format(len(X_train), t_train))
 
-    print("Scoring...")
     t1 = time.time()
     score = clf.score(X_test, y_test)
     t2 = time.time()
 
     t_test = t2 - t1
-    print("Scoring complete. Classification time for {0} points: {1:0.3f} s"
-          .format(len(X_train), t_test))
-    print("Classifier score: {0:0.3f}".format(score))
 
     # Generate graphs/data for analysis
-    ROC(GaussianMixture(n_components=11, covariance_type='full',
-                        random_state=0), X_train, X_test, y_train, y_test,
-        "11-component Gaussian Mixture Model", 'GMM11')
+    tpr, fpr, roc_auc = roc_calc(GaussianMixture(n_components=11,
+                                                 covariance_type='full',
+                                                 random_state=0),
+                                 X_train, X_test, y_train, y_test)
 
-    t2 = time.time()
-    print("GMM11 analysis complete. Total runtime: {0:0.3f} s"
-          .format(t2 - t0))
+    return tpr, fpr, roc_auc, t_train, t_test, score
 
 
-def GNBAnalysis(X_train, X_test, y_train, y_test):
-    print("Starting Gaussian Naive Bayesian analysis")
-    print("Initializing...")
-    t0 = time.time()
-
+def gnb_analysis(X_train, X_test, y_train, y_test):
     clf = GaussianNB()
 
-    print("Training Gaussian Naive Bayes...")
     t1 = time.time()
     clf.fit(X_train, y_train)
     t2 = time.time()
 
     t_train = t2 - t1
-    print("GNB training complete. Training time for {0} pts: {1:0.3f} s"
-          .format(len(X_train), t_train))
 
-    print("Scoring...")
     t1 = time.time()
     score = clf.score(X_test, y_test)
     t2 = time.time()
 
     t_test = t2 - t1
-    print("Scoring complete. Classification time for {0} points: {1:0.3f} s"
-          .format(len(X_train), t_test))
-    print("Classifier score: {0:0.3f}".format(score))
 
     # Generate graphs/data for analysis
-    ROC(GaussianNB(), X_train, X_test, y_train,
-        y_test, "Gaussian Naive Bayes", 'GNB')
+    tpr, fpr, roc_auc = roc_calc(GaussianNB(), X_train, X_test,
+                                 y_train, y_test)
 
-    t2 = time.time()
-    print("GNB analysis complete. Total runtime: {0:0.3f} s"
-          .format(t2 - t0))
+    return tpr, fpr, roc_auc, t_train, t_test, score
 
 
-def GMMBayesAnalysis(X_train, X_test, y_train, y_test):
-    print("Starting Gaussian Mixture Model Bayesian analysis")
-    print("Initializing...")
-    t0 = time.time()
-
+def gmm_bayes_analysis(X_train, X_test, y_train, y_test):
     clf = GMMBayes()
 
-    print("Training GMMBayes...")
     t1 = time.time()
     clf.fit(X_train, y_train)
     t2 = time.time()
 
     t_train = t2 - t1
-    print("GMMBayes training complete. Training time for {0} pts: {1:0.3f} s"
-          .format(len(X_train), t_train))
 
-    print("Scoring...")
     t1 = time.time()
     score = clf.score(X_test, y_test)
     t2 = time.time()
 
     t_test = t2 - t1
-    print("Scoring complete. Classification time for {0} points: {1:0.3f} s"
-          .format(len(X_train), t_test))
-    print("Classifier score: {0:0.3f}".format(score))
 
     # Generate graphs/data for analysis
-    ROC(GMMBayes(), X_train, X_test, y_train,
-        y_test, "Gaussian Mixture Model Bayesian", 'GMMB')
+    tpr, fpr, roc_auc = roc_calc(GMMBayes(), X_train, X_test, y_train, y_test)
 
-    t2 = time.time()
-    print("GMMBayes analysis complete. Total runtime: {0:0.3f} s"
-          .format(t2 - t0))
+    return tpr, fpr, roc_auc, t_train, t_test, score
 
 
-def knneighbors(neighbors, wweights, clr_train, clr_test, cls_train, cls_test):
-    print('K-Nearest Neighbors Classification')
-    t0 = time.time()
+def knneighbors(clr_train, clr_test, cls_train, cls_test):
+    nn = 1000
     # n_neighbors = number of neighbors by which selection is made
     # weights = 'uniform' where all points are weighed equally or 'distance'
     # where points are weighed as an inverse of distance from test point
-    neigh = KNeighborsClassifier(n_neighbors=neighbors, weights=wweights)
+    neigh = KNeighborsClassifier(n_neighbors=nn, weights='distance')
 
-    print('Training')
     t1 = time.time()
     neigh.fit(clr_train, cls_train)
     t2 = time.time()
 
     t_train = t2-t1
-    print('Training complete. Time for {0} points was {1:0.3f} s'
-          .format(len(clr_train), t_train))
 
-    print('Scoring')
     t1 = time.time()
     score = neigh.score(clr_test, cls_test)
     t2 = time.time()
 
-    t_score = t2-t1
-    print('Scoring complete. Time for {0} points was {1:0.3f} s'
-          .format(len(clr_test), t_score))
-    print("Classifier score: {0:0.3f}".format(score))
+    t_test = t2-t1
 
     # Analysis Graph
-    ROC(KNeighborsClassifier(neighbors, wweights), clr_train, clr_test,
-        cls_train, cls_test, "K-Nearest Neighbors-{0} weighting"
-        .format(wweights), 'knn')
+    tpr, fpr, roc_auc = roc_calc(KNeighborsClassifier(nn, 'distance'),
+                                 clr_train, clr_test, cls_train, cls_test)
 
-    tf = time.time()
-
-    print('K-Nearest Neighbors Complete. Runtime {0:0.3f} s.'.format(tf-t0))
+    return tpr, fpr, roc_auc, t_train, t_test, score
 
 
 if __name__ == "__main__":
@@ -487,43 +511,56 @@ if __name__ == "__main__":
     colordata = np.delete(colordata, i_extr, axis=0)
     subclass = np.delete(subclass, i_extr, axis=0)
 
-    print("Complete!")
-    print('==================================================================')
-
-    # Plot data along each set of axes
     # TODO: Optimize for Carbon star classes/white dwarfs/brown dwarfs
     stellar_class = []
     for c in subclass:
         stellar_class.append(c[0])
     stellar_class = np.array(stellar_class)
 
-    axLabels = ['$u-g$', '$g-r$', '$r-i$', '$i-z$']
-
-    CornerPlot(colordata.T, stellar_class, axLabels, 'All', 'color_corner')
-
     # split data into training and test sets
-    clr_train, clr_test, cls_train, cls_test = train_test_split(colordata,
-                                                                stellar_class,
-                                                                test_size=.5,
-                                                                random_state=0)
+    X_train, X_test, y_train, y_test = train_test_split(colordata,
+                                                        stellar_class,
+                                                        test_size=.2,
+                                                        random_state=0,
+                                                        stratify=stellar_class)
 
-    # Plot the training and test sets - just in case it's a weird split
-    CornerPlot(clr_train.T, cls_train, axLabels, 'Training', 'train_corner')
-    CornerPlot(clr_test.T, cls_test, axLabels, 'Test', 'test_corner')
+    print("Complete!")
+    print('==================================================================')
 
-    # Analysis
-    SVMAnalysis(clr_train, clr_test, cls_train, cls_test)
-    print("==================================================================")
-    RandForestAnalysis(clr_train, clr_test, cls_train, cls_test)
-    print("==================================================================")
-    GMM32Analysis(clr_train, clr_test, cls_train, cls_test)
-    print("==================================================================")
-    GMM11Analysis(clr_train, clr_test, cls_train, cls_test)
-    print("==================================================================")
-    GNBAnalysis(clr_train, clr_test, cls_train, cls_test)
-    print("==================================================================")
-    GMMBayesAnalysis(clr_train, clr_test, cls_train, cls_test)
-    print("==================================================================")
-    knneighbors(1000, 'distance', clr_train, clr_test, cls_train, cls_test)
+    # Plot all datasets
+    print("Plotting data...")
+
+    axLabels = ['$u-g$', '$g-r$', '$r-i$', '$i-z$']
+    corner_plot(colordata.T, stellar_class, axLabels, 'All', 'color_corner')
+    corner_plot(X_train.T, y_train, axLabels, 'Training', 'train_corner')
+    corner_plot(X_test.T, y_test, axLabels, 'Test', 'test_corner')
+
+    print("Complete!")
+    print('==================================================================')
+
+    # Do cross validation on training data for better statistics
+    funcs = [svm_analysis, rand_forest_analysis, knneighbors, gnb_analysis]
+    names = ['Support Vector Machine', 'Random Forest',
+             'K-Nearest Neighbors-distance weighting', 'Gaussian Naive Bayes']
+    s_names = ['svm', 'rf', 'knn', 'gnb']
+    for func, name, s_name in zip(funcs, names, s_names):
+        print('Starting {0} k-fold analysis'.format(name))
+        t_trains, t_tests, scores = k_fold_analysis(func, X_train, y_train,
+                                                    name, s_name)
+        tpr, fpr, roc_auc, t_train, t_test, score = func(X_train, X_test,
+                                                         y_train, y_test)
+
+        print('t_train = {0:.3f} +/- {1:.3f}, t_test = {2:.3f} +/- {3:.3f}, \
+              score = {4:.3f} +/- {5:.3f}'.format(np.mean(t_trains),
+                                                  np.std(t_trains),
+                                                  np.mean(t_tests),
+                                                  np.std(t_tests),
+                                                  np.mean(scores),
+                                                  np.std(scores)))
+
+        roc_plot(tpr, fpr, roc_auc, name, s_name)
+        print('t_train = {0:.3f}, t_test = {1:.3f}, score = {2:.3f}'
+              .format(t_train, t_test, score))
+        print("==============================================================")
 
     print('Analysis Complete!')
