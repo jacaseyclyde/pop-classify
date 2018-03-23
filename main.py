@@ -309,6 +309,9 @@ def k_fold_analysis(func, X_train, y_train, name, s_name):
 
 
 def svm_analysis(X_train, X_test, y_train, y_test):
+    scale_max = np.max(np.abs(X_train))
+    X_train = X_train / scale_max
+    X_test = X_test / scale_max
 
     clf = svm.SVC(kernel='precomputed', probability=True)
 
@@ -344,6 +347,62 @@ def svm_analysis(X_train, X_test, y_train, y_test):
     # Generate graphs/data for analysis
     tpr, fpr, roc_auc = roc_calc(svm.SVC(kernel='precomputed',
                                          probability=True), train, test,
+                                 y_train, y_test)
+
+    return tpr, fpr, roc_auc, t_train, t_test, score
+
+
+def svm_rbf_analysis(X_train, X_test, y_train, y_test):
+    # preprocessing
+    scale_max = np.max(np.abs(X_train))
+    X_train = X_train / scale_max
+    X_test = X_test / scale_max
+
+    clf = svm.SVC(kernel='rbf', probability=True)
+    # Compute basic statistics for SVM
+    t1 = time.time()
+    clf.fit(X_train, y_train)
+    t2 = time.time()
+
+    t_train = t2 - t1
+
+    t1 = time.time()
+    score = clf.score(X_test, y_test)
+    t2 = time.time()
+
+    t_test = t2 - t1
+
+    # Generate graphs/data for analysis
+    tpr, fpr, roc_auc = roc_calc(svm.SVC(kernel='rbf',
+                                         probability=True), X_train, X_test,
+                                 y_train, y_test)
+
+    return tpr, fpr, roc_auc, t_train, t_test, score
+
+
+def svm_lin_analysis(X_train, X_test, y_train, y_test):
+    # preprocessing
+    scale_max = np.max(np.abs(X_train))
+    X_train = X_train / scale_max
+    X_test = X_test / scale_max
+
+    clf = svm.SVC(kernel='linear', probability=True)
+    # Compute basic statistics for SVM
+    t1 = time.time()
+    clf.fit(X_train, y_train)
+    t2 = time.time()
+
+    t_train = t2 - t1
+
+    t1 = time.time()
+    score = clf.score(X_test, y_test)
+    t2 = time.time()
+
+    t_test = t2 - t1
+
+    # Generate graphs/data for analysis
+    tpr, fpr, roc_auc = roc_calc(svm.SVC(kernel='linear',
+                                         probability=True), X_train, X_test,
                                  y_train, y_test)
 
     return tpr, fpr, roc_auc, t_train, t_test, score
@@ -530,19 +589,20 @@ if __name__ == "__main__":
     # Plot all datasets
     print("Plotting data...")
 
-    axLabels = ['$u-g$', '$g-r$', '$r-i$', '$i-z$']
-    corner_plot(colordata.T, stellar_class, axLabels, 'All', 'color_corner')
-    corner_plot(X_train.T, y_train, axLabels, 'Training', 'train_corner')
-    corner_plot(X_test.T, y_test, axLabels, 'Test', 'test_corner')
+#    axLabels = ['$u-g$', '$g-r$', '$r-i$', '$i-z$']
+#    corner_plot(colordata.T, stellar_class, axLabels, 'All', 'color_corner')
+#    corner_plot(X_train.T, y_train, axLabels, 'Training', 'train_corner')
+#    corner_plot(X_test.T, y_test, axLabels, 'Test', 'test_corner')
 
     print("Complete!")
     print('==================================================================')
 
     # Do cross validation on training data for better statistics
-    funcs = [svm_analysis, rand_forest_analysis, knneighbors, gnb_analysis]
-    names = ['Support Vector Machine', 'Random Forest',
-             'K-Nearest Neighbors-distance weighting', 'Gaussian Naive Bayes']
-    s_names = ['svm', 'rf', 'knn', 'gnb']
+    funcs = [svm_analysis, svm_rbf_analysis, svm_lin_analysis]#, rand_forest_analysis, knneighbors,
+             #gnb_analysis]
+    names = ['Support Vector Machine', 'SVM RBF', 'SVM Linear']#, 'Random Forest',
+             #'K-Nearest Neighbors-distance weighting', 'Gaussian Naive Bayes']
+    s_names = ['svm', 'svm_rbf', 'svm_lin']#, 'rf', 'knn', 'gnb']
     for func, name, s_name in zip(funcs, names, s_names):
         print('Starting {0} k-fold analysis'.format(name))
         t_trains, t_tests, scores = k_fold_analysis(func, X_train, y_train,
