@@ -26,6 +26,8 @@ from sklearn.mixture import GaussianMixture
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 
+from sklearn import tree
+
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.preprocessing import label_binarize
 from sklearn.multiclass import OneVsRestClassifier
@@ -115,6 +117,12 @@ def corner_plot(data, cat, labels, data_amt, filename):
 
     fig1.savefig('./out/pdf/{0}.pdf'.format(filename))
     fig1.savefig('./out/png/{0}.png'.format(filename))
+
+
+def decision_tree_plot(X, y, labels):
+    clf = tree.DecisionTreeClassifier().fit(X, y)
+    tree.export_graphviz(clf, out_file='./out/tree.dot', max_depth=1,
+                         feature_names=labels, class_names=ckeys,)
 
 
 def roc_calc(clfFn, X_train, X_test, y_train, y_test):
@@ -584,43 +592,45 @@ if __name__ == "__main__":
                                                         stratify=stellar_class)
 
     print("Complete!")
-    print('==================================================================')
+#    print('==================================================================')
+#
+#    # Plot all datasets
+#    print("Plotting data...")
+#
+    ax_labels = ['u-g', 'g-r', 'r-i', 'i-z']
+#    corner_plot(colordata.T, stellar_class, ax_labels, 'All', 'color_corner')
+#    corner_plot(X_train.T, y_train, ax_labels, 'Training', 'train_corner')
+#    corner_plot(X_test.T, y_test, ax_labels, 'Test', 'test_corner')
+#
+#    print("Complete!")
+#    print('==================================================================')
 
-    # Plot all datasets
-    print("Plotting data...")
-
-#    axLabels = ['$u-g$', '$g-r$', '$r-i$', '$i-z$']
-#    corner_plot(colordata.T, stellar_class, axLabels, 'All', 'color_corner')
-#    corner_plot(X_train.T, y_train, axLabels, 'Training', 'train_corner')
-#    corner_plot(X_test.T, y_test, axLabels, 'Test', 'test_corner')
-
-    print("Complete!")
-    print('==================================================================')
+    decision_tree_plot(X_train, y_train, ax_labels)
 
     # Do cross validation on training data for better statistics
-    funcs = [svm_analysis, svm_rbf_analysis, svm_lin_analysis]#, rand_forest_analysis, knneighbors,
-             #gnb_analysis]
-    names = ['Support Vector Machine', 'SVM RBF', 'SVM Linear']#, 'Random Forest',
-             #'K-Nearest Neighbors-distance weighting', 'Gaussian Naive Bayes']
-    s_names = ['svm', 'svm_rbf', 'svm_lin']#, 'rf', 'knn', 'gnb']
-    for func, name, s_name in zip(funcs, names, s_names):
-        print('Starting {0} k-fold analysis'.format(name))
-        t_trains, t_tests, scores = k_fold_analysis(func, X_train, y_train,
-                                                    name, s_name)
-        tpr, fpr, roc_auc, t_train, t_test, score = func(X_train, X_test,
-                                                         y_train, y_test)
-
-        print('t_train = {0:.3f} +/- {1:.3f}, t_test = {2:.3f} +/- {3:.3f}, \
-              score = {4:.3f} +/- {5:.3f}'.format(np.mean(t_trains),
-                                                  np.std(t_trains),
-                                                  np.mean(t_tests),
-                                                  np.std(t_tests),
-                                                  np.mean(scores),
-                                                  np.std(scores)))
-
-        roc_plot(tpr, fpr, roc_auc, name, s_name)
-        print('t_train = {0:.3f}, t_test = {1:.3f}, score = {2:.3f}'
-              .format(t_train, t_test, score))
-        print("==============================================================")
+#    funcs = [svm_analysis, svm_rbf_analysis, svm_lin_analysis]#, rand_forest_analysis, knneighbors,
+#             #gnb_analysis]
+#    names = ['Support Vector Machine', 'SVM RBF', 'SVM Linear']#, 'Random Forest',
+#             #'K-Nearest Neighbors-distance weighting', 'Gaussian Naive Bayes']
+#    s_names = ['svm', 'svm_rbf', 'svm_lin']#, 'rf', 'knn', 'gnb']
+#    for func, name, s_name in zip(funcs, names, s_names):
+#        print('Starting {0} k-fold analysis'.format(name))
+#        t_trains, t_tests, scores = k_fold_analysis(func, X_train, y_train,
+#                                                    name, s_name)
+#        tpr, fpr, roc_auc, t_train, t_test, score = func(X_train, X_test,
+#                                                         y_train, y_test)
+#
+#        print('t_train = {0:.3f} +/- {1:.3f}, t_test = {2:.3f} +/- {3:.3f}, \
+#              score = {4:.3f} +/- {5:.3f}'.format(np.mean(t_trains),
+#                                                  np.std(t_trains),
+#                                                  np.mean(t_tests),
+#                                                  np.std(t_tests),
+#                                                  np.mean(scores),
+#                                                  np.std(scores)))
+#
+#        roc_plot(tpr, fpr, roc_auc, name, s_name)
+#        print('t_train = {0:.3f}, t_test = {1:.3f}, score = {2:.3f}'
+#              .format(t_train, t_test, score))
+#        print("==============================================================")
 
     print('Analysis Complete!')
