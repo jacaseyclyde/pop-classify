@@ -26,7 +26,7 @@ from sklearn.mixture import GaussianMixture
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 
-from sklearn.tree import DecisionTreeClassifier
+from sklearn import tree
 
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.preprocessing import label_binarize
@@ -52,8 +52,8 @@ n_classes = len(ckeys)
 if not os.path.exists('./out'):
     os.makedirs('./out')
 
-if not os.path.exists('../pres/img'):
-    os.makedirs('../pres/img')
+if not os.path.exists('../doc/img'):
+    os.makedirs('../doc/img')
 
 if not os.path.exists('./out/pdf'):
     os.makedirs('./out/pdf')
@@ -85,7 +85,7 @@ def corner_plot(data, cat, labels, data_amt, filename):
 
     fig1, ax1 = plt.subplots(nAx - 1, nAx - 1, sharex=True, sharey=True)
     fig1.suptitle('color-color Corner Plot: {0} Data'.format(data_amt),
-                  fontsize=16)
+                  fontsize=20)
     fig1.set_size_inches(4 * (nAx - 1), 4 * (nAx - 1))
 
     ax1[0, 0].set_xticklabels([])
@@ -100,10 +100,10 @@ def corner_plot(data, cat, labels, data_amt, filename):
                 ax1[i, j].scatter(data[j], data[i + 1], c=colClass, s=50)
 
             if j == 0:
-                ax1[i, j].set_ylabel(labels[i + 1])
+                ax1[i, j].set_ylabel(labels[i + 1], fontsize=16)
 
             if i == nAx - 2:
-                ax1[i, j].set_xlabel(labels[j])
+                ax1[i, j].set_xlabel(labels[j], fontsize=16)
 
     fig1.subplots_adjust(hspace=0, wspace=0)
 
@@ -111,20 +111,24 @@ def corner_plot(data, cat, labels, data_amt, filename):
     for i in range(0, len(ckeys)):
         recs.append(mpatches.Circle((0, 0), radius=50, fc=cdict[ckeys[i]]))
 
-    ax1[0, nAx - 2].legend(recs, ckeys, loc="upper right", ncol=2)
+    labels = []
+    for c in range(ckeys):
+        label = ''
+        if c == 'W':
+            label.append('White Dwarf')
+        elif c == 'C':
+            label.append('Carbon Star')
+        else:
+            label.append('Class {0} Stars'.format(c))
+
+    ax1[0, nAx - 2].legend(recs, ckeys, loc="upper right", ncol=2, fontsize=16)
 
 #    plt.show()
 
-    fig1.savefig('./out/pdf/{0}.pdf'.format(filename))
-    fig1.savefig('./out/png/{0}.png'.format(filename))
+    fig1.savefig('../doc/img/{0}.png'.format(filename))
 
 
-def decision_tree_plot(X, y):
-    X = X[:,:2]
-
-    plot_step = 0.02
-
-    clf = DecisionTreeClassifier(max_depth=1).fit(X, y)
+def decision_plot(X, y):
 
     col_class = []
     for c in y:
@@ -134,41 +138,25 @@ def decision_tree_plot(X, y):
 
     fig1 = plt.figure(figsize=(12, 12))
 
-    x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
-    y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
-    xx, yy = np.meshgrid(np.arange(x_min, x_max, plot_step),
-                         np.arange(y_min, y_max, plot_step))
-    plt.tight_layout(h_pad=0.5, w_pad=0.5, pad=2.5)
-
-    Z = clf.predict(np.c_[xx.ravel(), yy.ravel()])
-
-    Z_num = []
-    for i in range(len(ckeys)):
-        Z_num.append(i)
-
-    Zdict = dict(zip(ckeys, Z_num))
-
-    Z_col = []
-    for i, c in enumerate(Z):
-        Z_col.append(cdict[c])
-        Z[i] = Zdict[c]
-
-    Z_col = np.array(Z_col)
-
-    Z = Z.reshape(xx.shape)
-    cs = plt.contourf(xx, yy, Z, cmap=plt.cm.RdYlBu)
-
-
-    plt.xlabel('$u-g$')
-    plt.ylabel('$g-r$')
+    plt.xlabel('$g-r$')
+    plt.ylabel('$r-i$')
 
     # Plot the training points
-    plt.scatter(X[:, 0], X[:, 1], c=col_class, edgecolor='black', s=50)
+    plt.scatter(X[:, 1], X[:, 2], c=col_class, edgecolor='black', s=50)
+    plt.plot([np.min(X[:, 1]), np.max(X[:, 1])], [.62, .62], color='k',
+             linestyle='-', linewidth=2)
 
-    plt.suptitle("Decision surface of a decision tree using paired features")
-    plt.legend(loc='lower right', borderpad=0, handletextpad=0)
+    plt.title("Decision surface of a decision tree using paired features",
+              fontsize=20)
+    plt.legend(loc='lower right', borderpad=0, handletextpad=0, fontsize=16)
     plt.axis("tight")
     plt.show()
+
+
+def decision_tree_plot(X, y, labels):
+    clf = tree.DecisionTreeClassifier(random_state=0).fit(X, y)
+    tree.export_graphviz(clf, out_file='./out/tree.dot', max_depth=1,
+                         feature_names=labels, class_names=ckeys,)
 
 
 def roc_calc(clfFn, X_train, X_test, y_train, y_test):
@@ -367,6 +355,9 @@ def k_fold_analysis(func, X_train, y_train, name, s_name):
 
 
 def svm_analysis(X_train, X_test, y_train, y_test):
+    scale_max = np.max(np.abs(X_train))
+    X_train = X_train / scale_max
+    X_test = X_test / scale_max
 
     clf = svm.SVC(kernel='precomputed', probability=True)
 
@@ -402,6 +393,62 @@ def svm_analysis(X_train, X_test, y_train, y_test):
     # Generate graphs/data for analysis
     tpr, fpr, roc_auc = roc_calc(svm.SVC(kernel='precomputed',
                                          probability=True), train, test,
+                                 y_train, y_test)
+
+    return tpr, fpr, roc_auc, t_train, t_test, score
+
+
+def svm_rbf_analysis(X_train, X_test, y_train, y_test):
+    # preprocessing
+    scale_max = np.max(np.abs(X_train))
+    X_train = X_train / scale_max
+    X_test = X_test / scale_max
+
+    clf = svm.SVC(kernel='rbf', probability=True)
+    # Compute basic statistics for SVM
+    t1 = time.time()
+    clf.fit(X_train, y_train)
+    t2 = time.time()
+
+    t_train = t2 - t1
+
+    t1 = time.time()
+    score = clf.score(X_test, y_test)
+    t2 = time.time()
+
+    t_test = t2 - t1
+
+    # Generate graphs/data for analysis
+    tpr, fpr, roc_auc = roc_calc(svm.SVC(kernel='rbf',
+                                         probability=True), X_train, X_test,
+                                 y_train, y_test)
+
+    return tpr, fpr, roc_auc, t_train, t_test, score
+
+
+def svm_lin_analysis(X_train, X_test, y_train, y_test):
+    # preprocessing
+    scale_max = np.max(np.abs(X_train))
+    X_train = X_train / scale_max
+    X_test = X_test / scale_max
+
+    clf = svm.SVC(kernel='linear', probability=True)
+    # Compute basic statistics for SVM
+    t1 = time.time()
+    clf.fit(X_train, y_train)
+    t2 = time.time()
+
+    t_train = t2 - t1
+
+    t1 = time.time()
+    score = clf.score(X_test, y_test)
+    t2 = time.time()
+
+    t_test = t2 - t1
+
+    # Generate graphs/data for analysis
+    tpr, fpr, roc_auc = roc_calc(svm.SVC(kernel='linear',
+                                         probability=True), X_train, X_test,
                                  y_train, y_test)
 
     return tpr, fpr, roc_auc, t_train, t_test, score
@@ -591,24 +638,28 @@ if __name__ == "__main__":
     print("Complete!")
     print('==================================================================')
     
-    decision_tree_plot(colordata, stellar_class)
+        decision_plot(colordata, stellar_class)
 
 #    # Plot all datasets
 #    print("Plotting data...")
 #
-#    axLabels = ['$u-g$', '$g-r$', '$r-i$', '$i-z$']
-#    corner_plot(colordata.T, stellar_class, axLabels, 'All', 'color_corner')
-#    corner_plot(X_train.T, y_train, axLabels, 'Training', 'train_corner')
-#    corner_plot(X_test.T, y_test, axLabels, 'Test', 'test_corner')
+#
+    ax_labels = ['u-g', 'g-r', 'r-i', 'i-z']
+#    corner_plot(colordata.T, stellar_class, ax_labels, 'All', 'color_corner')
+#    corner_plot(X_train.T, y_train, ax_labels, 'Training', 'train_corner')
+#    corner_plot(X_test.T, y_test, ax_labels, 'Test', 'test_corner')
 #
 #    print("Complete!")
 #    print('==================================================================')
-#
-#    # Do cross validation on training data for better statistics
-#    funcs = [svm_analysis, rand_forest_analysis, knneighbors, gnb_analysis]
-#    names = ['Support Vector Machine', 'Random Forest',
-#             'K-Nearest Neighbors-distance weighting', 'Gaussian Naive Bayes']
-#    s_names = ['svm', 'rf', 'knn', 'gnb']
+
+    #decision_tree_plot(X_train, y_train, ax_labels)
+
+    # Do cross validation on training data for better statistics
+#    funcs = [svm_analysis, svm_rbf_analysis, svm_lin_analysis]#, rand_forest_analysis, knneighbors,
+#             #gnb_analysis]
+#    names = ['Support Vector Machine', 'SVM RBF', 'SVM Linear']#, 'Random Forest',
+#             #'K-Nearest Neighbors-distance weighting', 'Gaussian Naive Bayes']
+#    s_names = ['svm', 'svm_rbf', 'svm_lin']#, 'rf', 'knn', 'gnb']
 #    for func, name, s_name in zip(funcs, names, s_names):
 #        print('Starting {0} k-fold analysis'.format(name))
 #        t_trains, t_tests, scores = k_fold_analysis(func, X_train, y_train,
