@@ -230,9 +230,10 @@ def roc_plot(tpr, fpr, roc_auc, clfType, shortType):
 
 #    plt.show()
 
-    fig1.savefig('./out/pdf/{0}_roc.pdf'.format(shortType))
-    fig1.savefig('./out/png/{0}_roc.png'.format(shortType))
-    fig1.savefig('../pres/img/{0}_roc.png'.format(shortType))
+    #fig1.savefig('./out/pdf/{0}_roc.pdf'.format(shortType))
+    #fig1.savefig('./out/png/{0}_roc.png'.format(shortType))
+    fig1.savefig('../doc/img/{0}_roc.png'.format(shortType))
+
 
     print('Plot complete!')
 
@@ -310,9 +311,9 @@ def k_fold_analysis(func, X_train, y_train, name, s_name):
     plt.title('Micro-averaged ROC curve: {0}'.format(name), fontsize=40)
     plt.legend(loc="lower right", fontsize=40)
 
-    plt.savefig('./out/pdf/{0}_micro_roc.pdf'.format(s_name))
-    plt.savefig('./out/png/{0}_micro_roc.png'.format(s_name))
-    plt.savefig('../pres/img/{0}_micro_roc.png'.format(s_name))
+    #plt.savefig('./out/pdf/{0}_micro_roc.pdf'.format(s_name))
+    #plt.savefig('./out/png/{0}_micro_roc.png'.format(s_name))
+    plt.savefig('../doc/img/{0}_micro_roc.png'.format(s_name))
 
     # Macro
     plt.figure(1)
@@ -340,9 +341,9 @@ def k_fold_analysis(func, X_train, y_train, name, s_name):
     plt.title('Macro-averaged ROC curve: {0}'.format(name), fontsize=40)
     plt.legend(loc="lower right", fontsize=40)
 
-    plt.savefig('./out/pdf/{0}_macro_roc.pdf'.format(s_name))
-    plt.savefig('./out/png/{0}_macro_roc.png'.format(s_name))
-    plt.savefig('../pres/img/{0}_macro_roc.png'.format(s_name))
+    #plt.savefig('./out/pdf/{0}_macro_roc.pdf'.format(s_name))
+    #plt.savefig('./out/png/{0}_macro_roc.png'.format(s_name))
+    plt.savefig('../doc/img/{0}_macro_roc.png'.format(s_name))
 
 #    plt.show()
 
