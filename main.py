@@ -100,10 +100,10 @@ def corner_plot(data, cat, labels, data_amt, filename):
                 ax1[i, j].scatter(data[j], data[i + 1], c=colClass, s=50)
 
             if j == 0:
-                ax1[i, j].set_ylabel(labels[i + 1], fontsize=16)
+                ax1[i, j].set_ylabel(labels[i + 1], fontsize=20)
 
             if i == nAx - 2:
-                ax1[i, j].set_xlabel(labels[j], fontsize=16)
+                ax1[i, j].set_xlabel(labels[j], fontsize=20)
 
     fig1.subplots_adjust(hspace=0, wspace=0)
 
@@ -121,7 +121,7 @@ def corner_plot(data, cat, labels, data_amt, filename):
         else:
             label.append('Class {0} Stars'.format(c))
 
-    ax1[0, nAx - 2].legend(recs, ckeys, loc="upper right", ncol=2, fontsize=16)
+    ax1[0, nAx - 2].legend(recs, ckeys, loc="upper right", ncol=2, fontsize=20)
 
 #    plt.show()
 
@@ -138,18 +138,17 @@ def decision_plot(X, y):
 
     fig1 = plt.figure(figsize=(12, 12))
 
-    plt.xlabel('$g-r$')
-    plt.ylabel('$r-i$')
+    plt.xlabel('$g-r$', fontsize=40)
+    plt.ylabel('$r-i$', fontsize=40)
 
     # Plot the training points
     plt.scatter(X[:, 1], X[:, 2], c=col_class, edgecolor='black', s=50)
     plt.plot([np.min(X[:, 1]), np.max(X[:, 1])], [.62, .62], color='k',
              linestyle='-', linewidth=2)
 
-    plt.title("Decision surface of a decision tree using paired features",
-              fontsize=20)
-    plt.legend(loc='lower right', borderpad=0, handletextpad=0, fontsize=16)
+    plt.title("Single Decision Boundary", fontsize=40)
     plt.axis("tight")
+    fig1.savefig('../doc/img/rf_boundary.png')
     plt.show()
 
 
@@ -223,11 +222,11 @@ def roc_plot(tpr, fpr, roc_auc, clfType, shortType):
     plt.plot([0, 1], [0, 1], 'k--', lw=2)
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
+    plt.xlabel('False Positive Rate', fontsize=40)
+    plt.ylabel('True Positive Rate', fontsize=40)
     plt.title('Stellar Type Classification ROC curves: {0}'.format(clfType),
-              fontsize=16)
-    plt.legend(loc="lower right")
+              fontsize=40)
+    plt.legend(loc="lower right", fontsize=40)
 
 #    plt.show()
 
@@ -306,10 +305,10 @@ def k_fold_analysis(func, X_train, y_train, name, s_name):
 
     plt.xlim([0., 1.0])
     plt.ylim([0., 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('Micro-averaged ROC curve: {0}'.format(name))
-    plt.legend(loc="lower right")
+    plt.xlabel('False Positive Rate', fontsize=40)
+    plt.ylabel('True Positive Rate', fontsize=40)
+    plt.title('Micro-averaged ROC curve: {0}'.format(name), fontsize=40)
+    plt.legend(loc="lower right", fontsize=40)
 
     plt.savefig('./out/pdf/{0}_micro_roc.pdf'.format(s_name))
     plt.savefig('./out/png/{0}_micro_roc.png'.format(s_name))
@@ -336,10 +335,10 @@ def k_fold_analysis(func, X_train, y_train, name, s_name):
 
     plt.xlim([0., 1.0])
     plt.ylim([0., 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('Macro-averaged ROC curve: {0}'.format(name))
-    plt.legend(loc="lower right")
+    plt.xlabel('False Positive Rate', fontsize=40)
+    plt.ylabel('True Positive Rate', fontsize=40)
+    plt.title('Macro-averaged ROC curve: {0}'.format(name), fontsize=40)
+    plt.legend(loc="lower right", fontsize=40)
 
     plt.savefig('./out/pdf/{0}_macro_roc.pdf'.format(s_name))
     plt.savefig('./out/png/{0}_macro_roc.png'.format(s_name))
@@ -638,7 +637,7 @@ if __name__ == "__main__":
     print("Complete!")
     print('==================================================================')
     
-        decision_plot(colordata, stellar_class)
+    decision_plot(colordata, stellar_class)
 
 #    # Plot all datasets
 #    print("Plotting data...")
