@@ -41,15 +41,6 @@ n_classes = len(ckeys)
 if not os.path.exists('./out'):
     os.makedirs('./out')
 
-if not os.path.exists('../pres/img'):
-    os.makedirs('../pres/img')
-
-if not os.path.exists('./out/pdf'):
-    os.makedirs('./out/pdf')
-
-if not os.path.exists('./out/png'):
-    os.makedirs('./out/png')
-
 # =============================================================================
 # =============================================================================
 # # Function Definitions
@@ -104,8 +95,7 @@ def corner_plot(data, cat, labels, data_amt, filename):
 
     plt.show()
 
-    fig1.savefig('./out/pdf/{0}.pdf'.format(filename))
-    fig1.savefig('./out/png/{0}.png'.format(filename))
+    fig1.savefig('./out/{0}.pdf'.format(filename))
 
 
 def roc_plot(tpr, fpr, roc_auc, clfType, shortType):
@@ -145,9 +135,7 @@ def roc_plot(tpr, fpr, roc_auc, clfType, shortType):
 
     plt.show()
 
-    fig1.savefig('./out/pdf/{0}_roc.pdf'.format(shortType))
-    fig1.savefig('./out/png/{0}_roc.png'.format(shortType))
-    fig1.savefig('../pres/img/{0}_roc.png'.format(shortType))
+    fig1.savefig('./out/{0}_roc.pdf'.format(shortType))
 
     print('Plot complete!')
 
@@ -225,9 +213,7 @@ def k_fold_analysis(func, X_train, y_train, name, s_name):
     plt.title('Micro-averaged ROC curve: {0}'.format(name))
     plt.legend(loc="lower right")
 
-    plt.savefig('./out/pdf/{0}_micro_roc.pdf'.format(s_name))
-    plt.savefig('./out/png/{0}_micro_roc.png'.format(s_name))
-    plt.savefig('../pres/img/{0}_micro_roc.png'.format(s_name))
+    plt.savefig('./out/{0}_micro_roc.pdf'.format(s_name))
 
     # Macro
     plt.figure(1)
@@ -255,16 +241,14 @@ def k_fold_analysis(func, X_train, y_train, name, s_name):
     plt.title('Macro-averaged ROC curve: {0}'.format(name))
     plt.legend(loc="lower right")
 
-    plt.savefig('./out/pdf/{0}_macro_roc.pdf'.format(s_name))
-    plt.savefig('./out/png/{0}_macro_roc.png'.format(s_name))
-    plt.savefig('../pres/img/{0}_macro_roc.png'.format(s_name))
+    plt.savefig('./out/{0}_macro_roc.pdf'.format(s_name))
 
     plt.show()
 
     return t_trains, t_tests, scores
 
 
-if __name__ == "__main__":
+def main():
     # Import the data in 2 stmts b/c genfromtxt doesnt like multi-typing
     print("Importing data...")
     u, g, r, i, z = np.genfromtxt('./data/data.csv', delimiter=',',
@@ -334,3 +318,7 @@ if __name__ == "__main__":
         print("==============================================================")
 
     print('Analysis Complete!')
+
+
+if __name__ == "__main__":
+    main()
