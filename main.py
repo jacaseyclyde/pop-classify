@@ -7,6 +7,8 @@ Authors:
     Alex Colebaugh
     Kevin Prasad
 """
+from __future__ import absolute_import, division, print_function
+
 from clustering import svm_analysis, svm_rbf_analysis, svm_lin_analysis
 
 import os
@@ -19,6 +21,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import seaborn as sns
 
+import tensorflow as tf
+
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.metrics import auc
 
@@ -30,7 +34,14 @@ warnings.filterwarnings('ignore', category=DeprecationWarning)
 # # Globals/Init
 # =============================================================================
 # =============================================================================
-ckeys = ['O', 'B', 'A', 'F', 'G', 'K', 'M', 'T', 'L', 'C', 'W']
+ckeys = ['O', 'B', 'A', 'F', 'G', 'K', 'M',
+         'T Tauri', 'L', 'Carbon', 'White Dwarf']
+
+class_dict = {'O': 0, 'B': 1, 'A': 2, 'F': 3, 'G': 4, 'K': 5, 'M': 6, 'L': 7,
+              'T': 8, 'Carbon': 9, 'Carbon White Dwarf': 10,
+              'Carbon Lines': 11, 'White Dwarf': 12, 'Magnetic White Dwarf':13,
+              'Cataclysmic Variable': 14}
+
 cols = ['#006D82', '#82139F', '#005AC7', '#009FF9', '#F978F9', '#13D2DC',
         '#AA093B', '#F97850', '#09B45A', '#EFEF31', '#9FF982', '#F9E6BD']
 cdict = dict(zip(ckeys, sns.color_palette(cols, len(ckeys))))
@@ -41,6 +52,7 @@ n_classes = len(ckeys)
 if not os.path.exists('./out'):
     os.makedirs('./out')
 
+
 # =============================================================================
 # =============================================================================
 # # Function Definitions
@@ -48,9 +60,61 @@ if not os.path.exists('./out'):
 # =============================================================================
 
 # =============================================================================
-# Analysis Functions
+# Data Handling
 # =============================================================================
 
+def import_data():
+    print("Importing data...")
+    u, g, r, i, z = np.genfromtxt('./data/data.csv', delimiter=',',
+                                  skip_header=2, usecols=(0, 1, 2, 3, 4)).T
+    subclass = np.genfromtxt('./data/data.csv', delimiter=',', skip_header=2,
+                             usecols=5, dtype=str)
+    print("Import complete!")
+
+    print("Preprocessing...")
+    features = np.array([u-g, g-r, r-i, i-z]).T
+
+    # check for extreme outliers with magnitude differences greater than 100
+    i_extr = np.where(np.logical_or.reduce(np.abs(features) > 100, axis=1))
+
+    features = np.delete(features, i_extr, axis=0)
+    subclass = np.delete(subclass, i_extr, axis=0)
+
+    # TODO: Optimize for Carbon star classes/white dwarfs/brown dwarfs
+    labels = []
+    for c in subclass:
+        if c[0] in ['O', 'B', 'A', 'F', 'G', 'K', 'M', 'L', 'T']:
+            labels.append(class_dict[c[0]])
+        elif c == 'Carbon':
+            labels.append(class_dict['Carbon'])
+        elif c == 'CarbonWD':
+            labels.append(class_dict['Carbon White Dwarf'])
+        elif c == 'Carbon_lines':
+            labels.append(class_dict['Carbon Lines'])
+        elif c == 'WD':
+            labels.append(class_dict['White Dwarf'])
+        elif c == 'WDmagnetic':
+            labels.append(class_dict['Magnetic White Dwarf'])
+        elif c == 'CV':
+            labels.append(class_dict['Cataclysmic Variable'])
+
+    labels = np.array(labels)
+
+    return features, labels
+
+
+def input_fn(features, labels, batch_size):
+    """An input function for training"""
+    # Convert the inputs to a Dataset.
+    dataset = tf.data.Dataset.from_tensor_slices((dict(features), labels))
+
+    # Shuffle, repeat, and batch the examples.
+    return dataset.shuffle(1000).repeat().batch(batch_size)
+
+
+# =============================================================================
+# Plotting
+# =============================================================================
 
 def corner_plot(data, cat, labels, data_amt, filename):
     # convert string class labels to color labels (for use w/ scatter)
@@ -139,6 +203,10 @@ def roc_plot(tpr, fpr, roc_auc, clfType, shortType):
 
     print('Plot complete!')
 
+
+# =============================================================================
+# Analysis
+# =============================================================================
 
 def k_fold_analysis(func, X_train, y_train, name, s_name):
     cv = StratifiedKFold(n_splits=5, random_state=0)
@@ -250,34 +318,14 @@ def k_fold_analysis(func, X_train, y_train, name, s_name):
 
 def main():
     # Import the data in 2 stmts b/c genfromtxt doesnt like multi-typing
-    print("Importing data...")
-    u, g, r, i, z = np.genfromtxt('./data/data.csv', delimiter=',',
-                                  skip_header=2, usecols=(0, 1, 2, 3, 4)).T
-    subclass = np.genfromtxt('./data/data.csv', delimiter=',', skip_header=2,
-                             usecols=5, dtype=str)
-    print("Import complete!")
-
-    print("Preprocessing...")
-    colordata = np.array([u-g, g-r, r-i, i-z]).T
-
-    # check for extreme outliers with magnitude differences greater than 100
-    i_extr = np.where(np.logical_or.reduce(np.abs(colordata) > 100, axis=1))
-
-    colordata = np.delete(colordata, i_extr, axis=0)
-    subclass = np.delete(subclass, i_extr, axis=0)
-
-    # TODO: Optimize for Carbon star classes/white dwarfs/brown dwarfs
-    stellar_class = []
-    for c in subclass:
-        stellar_class.append(c[0])
-    stellar_class = np.array(stellar_class)
 
     # split data into training and test sets
-    X_train, X_test, y_train, y_test = train_test_split(colordata,
-                                                        stellar_class,
+    features, labels = import_data()
+    train_x, test_x, train_y, test_y = train_test_split(features,
+                                                        labels,
                                                         test_size=.2,
                                                         random_state=0,
-                                                        stratify=stellar_class)
+                                                        stratify=labels)
 
     print("Complete!")
     print('==================================================================')
@@ -299,10 +347,10 @@ def main():
     s_names = ['svm', 'svm_rbf', 'svm_lin']
     for func, name, s_name in zip(funcs, names, s_names):
         print('Starting {0} k-fold analysis'.format(name))
-        t_trains, t_tests, scores = k_fold_analysis(func, X_train, y_train,
+        t_trains, t_tests, scores = k_fold_analysis(func, train_x, train_y,
                                                     name, s_name)
-        tpr, fpr, roc_auc, t_train, t_test, score = func(X_train, X_test,
-                                                         y_train, y_test)
+        tpr, fpr, roc_auc, t_train, t_test, score = func(train_x, test_x,
+                                                         train_y, test_y)
 
         print('t_train = {0:.3f} +/- {1:.3f}, t_test = {2:.3f} +/- {3:.3f}, \
               score = {4:.3f} +/- {5:.3f}'.format(np.mean(t_trains),
@@ -321,4 +369,29 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # main()
+    features, labels = import_data()
+
+    train_x, test_x, train_y, test_y = train_test_split(features,
+                                                        labels,
+                                                        test_size=.2,
+                                                        random_state=0,
+                                                        stratify=labels)
+
+    train_x = dict(zip(['u-g', 'g-r', 'r-i', 'i-z'], train_x.T))
+    test_x = dict(zip(['u-g', 'g-r', 'r-i', 'i-z'], test_x.T))
+
+    my_feature_columns = []
+    for key in train_x.keys():
+        my_feature_columns.append(tf.feature_column.numeric_column(key=key))
+
+    classifier = tf.estimator.DNNClassifier(feature_columns=my_feature_columns,
+                                            hidden_units=[10, 10],
+                                            n_classes=len(np.unique(labels)))
+
+    classifier.train(input_fn=lambda: input_fn(train_x, train_y, 100),
+                     steps=1000)
+    
+    eval_result = classifier.evaluate(input_fn=lambda: input_fn(test_x, test_y,
+                                                                100))
+
