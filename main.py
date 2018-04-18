@@ -391,7 +391,8 @@ if __name__ == "__main__":
 
     classifier.train(input_fn=lambda: input_fn(train_x, train_y, 100),
                      steps=1000)
-    
+
     eval_result = classifier.evaluate(input_fn=lambda: input_fn(test_x, test_y,
-                                                                100))
+                                                                100),
+                                      steps=1000)
 
