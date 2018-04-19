@@ -35,7 +35,7 @@ def writer(name, data):
 
 
 # n = number of objects
-n = 50000
+n = int(5e5)
 # s = SQL query
 s = "SELECT TOP {} \
         p.u,p.g,p.r,p.i,p.z,s.subClass \

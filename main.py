@@ -38,9 +38,10 @@ ckeys = ['O', 'B', 'A', 'F', 'G', 'K', 'M',
          'T Tauri', 'L', 'Carbon', 'White Dwarf']
 
 label_vocabulary = ['O', 'B', 'A', 'F', 'G', 'K', 'M', 'L', 'T',
-                    'Carbon', 'Carbon White Dwarf', 'Carbon Lines',
-                    'White Dwarf', 'Magnetic White Dwarf',
-                    'Cataclysmic Variable']
+                    'Carbon', 'Carbon Lines', 'White Dwarf',
+                    'Carbon White Dwarf', 'Calcium White Dwarf', 
+                    'Magnetic White Dwarf', 'Cool White Dwarf',
+                    'Hot White Dwarf', 'Cataclysmic Variable']
 
 cols = ['#006D82', '#82139F', '#005AC7', '#009FF9', '#F978F9', '#13D2DC',
         '#AA093B', '#F97850', '#09B45A', '#EFEF31', '#9FF982', '#F9E6BD']
@@ -89,14 +90,22 @@ def import_data():
             labels.append('Carbon')
         elif c == 'CarbonWD':
             labels.append('Carbon White Dwarf')
+        elif c == 'CalciumWD':
+            labels.append('Calcium White Dwarf')
         elif c == 'Carbon_lines':
             labels.append('Carbon Lines')
         elif c == 'WD':
             labels.append('White Dwarf')
+        elif c == 'WDcooler':
+            labels.append('Cool White Dwarf')
+        elif c == 'WDhotter':
+            labels.append('Hot White Dwarf')
         elif c == 'WDmagnetic':
             labels.append('Magnetic White Dwarf')
         elif c == 'CV':
             labels.append('Cataclysmic Variable')
+        elif ('sd:F0' in c) or ('sdF3' in c):
+            labels.append('F')
 
     labels = np.array(labels)
 
@@ -393,7 +402,6 @@ def main():
 
 if __name__ == "__main__":
     # main()
-    steps = 1e4
     features, labels = import_data()
 
     train_x, test_x, train_y, test_y = train_test_split(features,
@@ -416,11 +424,10 @@ if __name__ == "__main__":
                                             label_vocabulary=label_vocabulary,
                                             model_dir='./models')
 
-    classifier.train(steps=steps,
+    classifier.train(steps=1 * len(train_y),
                      input_fn=lambda: train_input_fn(train_x, train_y, 100))
 
-    eval_result = classifier.evaluate(steps=steps,
-                                      input_fn=lambda: eval_input_fn(test_x,
+    eval_result = classifier.evaluate(input_fn=lambda: eval_input_fn(test_x,
                                                                      test_y,
                                                                      100))
 
@@ -437,4 +444,3 @@ if __name__ == "__main__":
 
         print(template.format(label_vocabulary[class_id],
                               100 * probability, expec))
-        
