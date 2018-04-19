@@ -37,10 +37,10 @@ warnings.filterwarnings('ignore', category=DeprecationWarning)
 ckeys = ['O', 'B', 'A', 'F', 'G', 'K', 'M',
          'T Tauri', 'L', 'Carbon', 'White Dwarf']
 
-class_dict = {'O': 0, 'B': 1, 'A': 2, 'F': 3, 'G': 4, 'K': 5, 'M': 6, 'L': 7,
-              'T': 8, 'Carbon': 9, 'Carbon White Dwarf': 10,
-              'Carbon Lines': 11, 'White Dwarf': 12, 'Magnetic White Dwarf':13,
-              'Cataclysmic Variable': 14}
+label_vocabulary = ['O', 'B', 'A', 'F', 'G', 'K', 'M', 'L', 'T',
+                    'Carbon', 'Carbon White Dwarf', 'Carbon Lines',
+                    'White Dwarf', 'Magnetic White Dwarf',
+                    'Cataclysmic Variable']
 
 cols = ['#006D82', '#82139F', '#005AC7', '#009FF9', '#F978F9', '#13D2DC',
         '#AA093B', '#F97850', '#09B45A', '#EFEF31', '#9FF982', '#F9E6BD']
@@ -84,32 +84,55 @@ def import_data():
     labels = []
     for c in subclass:
         if c[0] in ['O', 'B', 'A', 'F', 'G', 'K', 'M', 'L', 'T']:
-            labels.append(class_dict[c[0]])
+            labels.append(c[0])
         elif c == 'Carbon':
-            labels.append(class_dict['Carbon'])
+            labels.append('Carbon')
         elif c == 'CarbonWD':
-            labels.append(class_dict['Carbon White Dwarf'])
+            labels.append('Carbon White Dwarf')
         elif c == 'Carbon_lines':
-            labels.append(class_dict['Carbon Lines'])
+            labels.append('Carbon Lines')
         elif c == 'WD':
-            labels.append(class_dict['White Dwarf'])
+            labels.append('White Dwarf')
         elif c == 'WDmagnetic':
-            labels.append(class_dict['Magnetic White Dwarf'])
+            labels.append('Magnetic White Dwarf')
         elif c == 'CV':
-            labels.append(class_dict['Cataclysmic Variable'])
+            labels.append('Cataclysmic Variable')
 
     labels = np.array(labels)
 
     return features, labels
 
 
-def input_fn(features, labels, batch_size):
+def train_input_fn(features, labels, batch_size):
     """An input function for training"""
     # Convert the inputs to a Dataset.
     dataset = tf.data.Dataset.from_tensor_slices((dict(features), labels))
 
     # Shuffle, repeat, and batch the examples.
-    return dataset.shuffle(1000).repeat().batch(batch_size)
+    dataset = dataset.shuffle(1000).repeat().batch(batch_size)
+
+    # Return the dataset.
+    return dataset
+
+
+def eval_input_fn(features, labels, batch_size):
+    """An input function for evaluation and prediction"""
+    features = dict(features)
+    if labels is None:
+        # No labels, use only features.
+        inputs = features
+    else:
+        inputs = (features, labels)
+
+    # Convert the inputs to a Dataset.
+    dataset = tf.data.Dataset.from_tensor_slices(inputs)
+
+    # Batch the examples
+    assert batch_size is not None, "batch_size must not be None"
+    dataset = dataset.batch(batch_size)
+
+    # Return the dataset.
+    return dataset
 
 
 # =============================================================================
@@ -370,6 +393,7 @@ def main():
 
 if __name__ == "__main__":
     # main()
+    steps = 1e4
     features, labels = import_data()
 
     train_x, test_x, train_y, test_y = train_test_split(features,
@@ -379,6 +403,7 @@ if __name__ == "__main__":
                                                         stratify=labels)
 
     train_x = dict(zip(['u-g', 'g-r', 'r-i', 'i-z'], train_x.T))
+    pred_x = dict(zip(['u-g', 'g-r', 'r-i', 'i-z'], test_x[:5].T))
     test_x = dict(zip(['u-g', 'g-r', 'r-i', 'i-z'], test_x.T))
 
     my_feature_columns = []
@@ -386,13 +411,30 @@ if __name__ == "__main__":
         my_feature_columns.append(tf.feature_column.numeric_column(key=key))
 
     classifier = tf.estimator.DNNClassifier(feature_columns=my_feature_columns,
-                                            hidden_units=[10, 10],
-                                            n_classes=len(np.unique(labels)))
+                                            hidden_units=[10],
+                                            n_classes=len(np.unique(labels)),
+                                            label_vocabulary=label_vocabulary,
+                                            model_dir='./models')
 
-    classifier.train(input_fn=lambda: input_fn(train_x, train_y, 100),
-                     steps=1000)
+    classifier.train(steps=steps,
+                     input_fn=lambda: train_input_fn(train_x, train_y, 100))
 
-    eval_result = classifier.evaluate(input_fn=lambda: input_fn(test_x, test_y,
-                                                                100),
-                                      steps=1000)
+    eval_result = classifier.evaluate(steps=steps,
+                                      input_fn=lambda: eval_input_fn(test_x,
+                                                                     test_y,
+                                                                     100))
 
+    pred_result = classifier.predict(
+            input_fn=lambda: eval_input_fn(pred_x,
+                                           labels=None,
+                                           batch_size=100))
+
+    for pred_dict, expec in zip(pred_result, test_y[:5]):
+        template = ('\nPrediction is "{}" ({:.1f}%), expected "{}"')
+
+        class_id = pred_dict['class_ids'][0]
+        probability = pred_dict['probabilities'][class_id]
+
+        print(template.format(label_vocabulary[class_id],
+                              100 * probability, expec))
+        
