@@ -11,7 +11,7 @@ from __future__ import absolute_import, division, print_function
 
 from clustering import svm_analysis, svm_rbf_analysis, svm_lin_analysis
 
-import os
+import os, shutil
 import warnings
 
 import numpy as np
@@ -36,12 +36,6 @@ warnings.filterwarnings('ignore', category=DeprecationWarning)
 # =============================================================================
 ckeys = ['O', 'B', 'A', 'F', 'G', 'K', 'M',
          'T Tauri', 'L', 'Carbon', 'White Dwarf']
-
-label_vocabulary = ['O', 'B', 'A', 'F', 'G', 'K', 'M', 'L', 'T',
-                    'Carbon', 'Carbon Lines', 'White Dwarf',
-                    'Carbon White Dwarf', 'Calcium White Dwarf', 
-                    'Magnetic White Dwarf', 'Cool White Dwarf',
-                    'Hot White Dwarf', 'Cataclysmic Variable']
 
 cols = ['#006D82', '#82139F', '#005AC7', '#009FF9', '#F978F9', '#13D2DC',
         '#AA093B', '#F97850', '#09B45A', '#EFEF31', '#9FF982', '#F9E6BD']
@@ -112,7 +106,7 @@ def import_data():
     return features, labels
 
 
-def train_input_fn(features, labels, batch_size):
+def train_fn(features, labels, batch_size):
     """An input function for training"""
     # Convert the inputs to a Dataset.
     dataset = tf.data.Dataset.from_tensor_slices((dict(features), labels))
@@ -124,8 +118,8 @@ def train_input_fn(features, labels, batch_size):
     return dataset
 
 
-def eval_input_fn(features, labels, batch_size):
-    """An input function for evaluation and prediction"""
+def eval_fn(features, labels, batch_size):
+    """An input function for edelete files pythonvaluation and prediction"""
     features = dict(features)
     if labels is None:
         # No labels, use only features.
@@ -403,6 +397,7 @@ def main():
 if __name__ == "__main__":
     # main()
     features, labels = import_data()
+    label_vocab = np.unique(labels).tolist()
 
     train_x, test_x, train_y, test_y = train_test_split(features,
                                                         labels,
@@ -414,33 +409,48 @@ if __name__ == "__main__":
     pred_x = dict(zip(['u-g', 'g-r', 'r-i', 'i-z'], test_x[:5].T))
     test_x = dict(zip(['u-g', 'g-r', 'r-i', 'i-z'], test_x.T))
 
-    my_feature_columns = []
+    feature_cols = []
     for key in train_x.keys():
-        my_feature_columns.append(tf.feature_column.numeric_column(key=key))
+        feature_cols.append(tf.feature_column.numeric_column(key=key))
 
-    classifier = tf.estimator.DNNClassifier(feature_columns=my_feature_columns,
-                                            hidden_units=[10],
-                                            n_classes=len(np.unique(labels)),
-                                            label_vocabulary=label_vocabulary,
-                                            model_dir='./models')
+    model_dir = './models'
+    n_classes = len(np.unique(labels))
+    n_layers = 10
+    accuracies = []
+    for layers in range(n_layers+1):
+        # clean out the model directory
+        for filename in os.listdir(model_dir):
+            filepath = os.path.join(model_dir, filename)
+            try:
+                if os.path.isfile(filepath):
+                    os.unlink(filepath)
+                elif os.path.isdir(filepath):
+                    shutil.rmtree(filepath)
+            except Exception as e:
+                print(e)
+        hidden_units = [100] * layers
+        classifier = tf.estimator.DNNClassifier(feature_columns=feature_cols,
+                                                hidden_units=hidden_units,
+                                                n_classes=n_classes,
+                                                label_vocabulary=label_vocab,
+                                                model_dir=model_dir)
 
-    classifier.train(steps=1 * len(train_y),
-                     input_fn=lambda: train_input_fn(train_x, train_y, 100))
+        classifier.train(steps=1 * len(train_y),
+                         input_fn=lambda: train_fn(train_x, train_y, 100))
 
-    eval_result = classifier.evaluate(input_fn=lambda: eval_input_fn(test_x,
-                                                                     test_y,
-                                                                     100))
+        eval_result = classifier.evaluate(input_fn=lambda: eval_fn(test_x,
+                                                                   test_y,
+                                                                   100))
+        accuracies.append(eval_result['accuracy'])
 
-    pred_result = classifier.predict(
-            input_fn=lambda: eval_input_fn(pred_x,
-                                           labels=None,
-                                           batch_size=100))
-
-    for pred_dict, expec in zip(pred_result, test_y[:5]):
-        template = ('\nPrediction is "{}" ({:.1f}%), expected "{}"')
-
-        class_id = pred_dict['class_ids'][0]
-        probability = pred_dict['probabilities'][class_id]
-
-        print(template.format(label_vocabulary[class_id],
-                              100 * probability, expec))
+#    pred_result = classifier.predict(
+#            input_fn=lambda: eval_fn(pred_x, labels=None, batch_size=100))
+#
+#    for pred_dict, expec in zip(pred_result, test_y[:5]):
+#        template = ('\nPrediction is "{}" ({:.1f}%), expected "{}"')
+#
+#        class_id = pred_dict['class_ids'][0]
+#        probability = pred_dict['probabilities'][class_id]
+#
+#        print(template.format(label_vocabulary[class_id],
+#                              100 * probability, expec))
