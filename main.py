@@ -49,6 +49,9 @@ model_dir = './models'
 if not os.path.exists('./out'):
     os.makedirs('./out')
 
+# neural network configs
+n_layers = 2
+
 
 # =============================================================================
 # =============================================================================
@@ -236,6 +239,53 @@ def roc_plot(tpr, fpr, roc_auc, clfType, shortType):
 # Analysis
 # =============================================================================
 
+def neuron_analysis(n_neurons, train_x, train_y, test_x, test_y):
+    n_pts = 5
+    n_neurons = int(n_neurons / 100)
+    accuracies = np.zeros((n_neurons, n_pts))
+    x_layers = np.zeros((n_neurons, n_pts), dtype=int)
+    for neurons in range(n_neurons):
+        for i in range(n_pts):
+            # clean out the model directory
+            for filename in os.listdir(model_dir):
+                filepath = os.path.join(model_dir, filename)
+                try:
+                    if os.path.isfile(filepath):
+                        os.unlink(filepath)
+                    elif os.path.isdir(filepath):
+                        shutil.rmtree(filepath)
+                except Exception as e:
+                    print(e)
+            hidden_units = [(neurons + 1) * 100] * n_layers
+            classifier = tf.estimator.DNNClassifier(feature_columns=feature_cols,
+                                                    hidden_units=hidden_units,
+                                                    n_classes=n_classes,
+                                                    label_vocabulary=label_vocab,
+                                                    model_dir=model_dir)
+
+            classifier.train(steps=np.floor(.1 * len(train_y)),
+                             input_fn=lambda: train_fn(train_x, train_y, 100))
+
+            eval_result = classifier.evaluate(input_fn=lambda: eval_fn(test_x,
+                                                                       test_y,
+                                                                       100))
+            accuracies[neurons, i] = eval_result['accuracy']
+            x_layers[neurons, i] = (neurons + 1) * 100
+
+    acc_mean = np.mean(accuracies, axis=1)
+    acc_std = np.std(accuracies, axis=1)
+
+    plt.figure(figsize=(6, 6))
+    plt.scatter(x_layers, accuracies, marker='o', color='k', alpha=0.5,
+                label='accuracies', zorder=0)
+    plt.errorbar(range(len(acc_mean) + 1) * 100, acc_mean, color='r', yerr=acc_std,
+                 linewidth=1, label='mean accuracy', capsize=2)
+    plt.legend()
+    plt.xlabel('Neurons')
+    plt.ylabel('Accuracy')
+    plt.savefig('neuron_accuracy.pdf')
+
+
 def layer_analysis(n_layers, train_x, train_y, test_x, test_y):
     n_pts = 10
     accuracies = np.zeros((n_layers + 1, n_pts))
@@ -280,6 +330,7 @@ def layer_analysis(n_layers, train_x, train_y, test_x, test_y):
     plt.xlabel('Number of Hidden Layers')
     plt.ylabel('Accuracy')
     plt.savefig('layer_accuracy.pdf')
+
 
 def k_fold_analysis(func, X_train, y_train, name, s_name):
     cv = StratifiedKFold(n_splits=5, random_state=0)
@@ -462,7 +513,8 @@ if __name__ == "__main__":
 
     n_classes = len(np.unique(labels))
 
-    layer_analysis(5, train_x, train_y, test_x, test_y)
+#    layer_analysis(5, train_x, train_y, test_x, test_y)
+    neuron_analysis(1000, train_x, train_y, test_x, test_y)
 
 #    pred_result = classifier.predict(
 #            input_fn=lambda: eval_fn(pred_x, labels=None, batch_size=100))
