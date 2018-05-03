@@ -43,6 +43,8 @@ cdict = dict(zip(ckeys, sns.color_palette(cols, len(ckeys))))
 
 n_classes = len(ckeys)
 
+model_dir = './models'
+
 # init data save locations
 if not os.path.exists('./out'):
     os.makedirs('./out')
@@ -234,6 +236,51 @@ def roc_plot(tpr, fpr, roc_auc, clfType, shortType):
 # Analysis
 # =============================================================================
 
+def layer_analysis(n_layers, train_x, train_y, test_x, test_y):
+    n_pts = 10
+    accuracies = np.zeros((n_layers + 1, n_pts))
+    x_layers = np.zeros((n_layers + 1, n_pts), dtype=int)
+    for layers in range(n_layers+1):
+        for i in range(n_pts):
+            # clean out the model directory
+            for filename in os.listdir(model_dir):
+                filepath = os.path.join(model_dir, filename)
+                try:
+                    if os.path.isfile(filepath):
+                        os.unlink(filepath)
+                    elif os.path.isdir(filepath):
+                        shutil.rmtree(filepath)
+                except Exception as e:
+                    print(e)
+            hidden_units = [100] * layers
+            classifier = tf.estimator.DNNClassifier(feature_columns=feature_cols,
+                                                    hidden_units=hidden_units,
+                                                    n_classes=n_classes,
+                                                    label_vocabulary=label_vocab,
+                                                    model_dir=model_dir)
+
+            classifier.train(steps=np.floor(1 * len(train_y)),
+                             input_fn=lambda: train_fn(train_x, train_y, 100))
+
+            eval_result = classifier.evaluate(input_fn=lambda: eval_fn(test_x,
+                                                                       test_y,
+                                                                       100))
+            accuracies[layers, i] = eval_result['accuracy']
+            x_layers[layers, i] = layers
+
+    acc_mean = np.mean(accuracies, axis=1)
+    acc_std = np.std(accuracies, axis=1)
+
+    plt.figure(figsize=(6, 6))
+    plt.scatter(x_layers, accuracies, marker='o', color='k', alpha=0.5,
+                label='accuracies', zorder=0)
+    plt.errorbar(range(len(acc_mean)), acc_mean, color='r', yerr=acc_std,
+                 linewidth=1, label='mean accuracy', capsize=2)
+    plt.legend()
+    plt.xlabel('Number of Hidden Layers')
+    plt.ylabel('Accuracy')
+    plt.savefig('layer_accuracy.pdf')
+
 def k_fold_analysis(func, X_train, y_train, name, s_name):
     cv = StratifiedKFold(n_splits=5, random_state=0)
 
@@ -413,35 +460,9 @@ if __name__ == "__main__":
     for key in train_x.keys():
         feature_cols.append(tf.feature_column.numeric_column(key=key))
 
-    model_dir = './models'
     n_classes = len(np.unique(labels))
-    n_layers = 10
-    accuracies = []
-    for layers in range(n_layers+1):
-        # clean out the model directory
-        for filename in os.listdir(model_dir):
-            filepath = os.path.join(model_dir, filename)
-            try:
-                if os.path.isfile(filepath):
-                    os.unlink(filepath)
-                elif os.path.isdir(filepath):
-                    shutil.rmtree(filepath)
-            except Exception as e:
-                print(e)
-        hidden_units = [100] * layers
-        classifier = tf.estimator.DNNClassifier(feature_columns=feature_cols,
-                                                hidden_units=hidden_units,
-                                                n_classes=n_classes,
-                                                label_vocabulary=label_vocab,
-                                                model_dir=model_dir)
 
-        classifier.train(steps=1 * len(train_y),
-                         input_fn=lambda: train_fn(train_x, train_y, 100))
-
-        eval_result = classifier.evaluate(input_fn=lambda: eval_fn(test_x,
-                                                                   test_y,
-                                                                   100))
-        accuracies.append(eval_result['accuracy'])
+    layer_analysis(5, train_x, train_y, test_x, test_y)
 
 #    pred_result = classifier.predict(
 #            input_fn=lambda: eval_fn(pred_x, labels=None, batch_size=100))
