@@ -11,8 +11,11 @@ from __future__ import absolute_import, division, print_function
 
 from clustering import svm_analysis, svm_rbf_analysis, svm_lin_analysis
 
-import os, shutil
+import os
+import shutil
 import warnings
+
+from tqdm import tqdm, trange
 
 import numpy as np
 from scipy import interp
@@ -28,6 +31,9 @@ from sklearn.metrics import auc
 
 
 warnings.filterwarnings('ignore', category=DeprecationWarning)
+tf.logging.set_verbosity(tf.logging.ERROR)
+tqdm.monitor_interval = 0
+
 
 # =============================================================================
 # =============================================================================
@@ -240,12 +246,11 @@ def roc_plot(tpr, fpr, roc_auc, clfType, shortType):
 # =============================================================================
 
 def neuron_analysis(n_neurons, train_x, train_y, test_x, test_y):
-    n_pts = 5
-    n_neurons = int(n_neurons / 100)
+    n_pts = 1
     accuracies = np.zeros((n_neurons, n_pts))
     x_layers = np.zeros((n_neurons, n_pts), dtype=int)
-    for neurons in range(n_neurons):
-        for i in range(n_pts):
+    for neurons in trange(n_neurons, desc='Neurons'):
+        for i in trange(n_pts, desc='Points'):
             # clean out the model directory
             for filename in os.listdir(model_dir):
                 filepath = os.path.join(model_dir, filename)
@@ -256,21 +261,21 @@ def neuron_analysis(n_neurons, train_x, train_y, test_x, test_y):
                         shutil.rmtree(filepath)
                 except Exception as e:
                     print(e)
-            hidden_units = [(neurons + 1) * 100] * n_layers
+            hidden_units = [neurons + 1] * n_layers
             classifier = tf.estimator.DNNClassifier(feature_columns=feature_cols,
                                                     hidden_units=hidden_units,
                                                     n_classes=n_classes,
                                                     label_vocabulary=label_vocab,
                                                     model_dir=model_dir)
 
-            classifier.train(steps=np.floor(.1 * len(train_y)),
+            classifier.train(steps=np.floor(1 * len(train_y)),
                              input_fn=lambda: train_fn(train_x, train_y, 100))
 
             eval_result = classifier.evaluate(input_fn=lambda: eval_fn(test_x,
                                                                        test_y,
                                                                        100))
             accuracies[neurons, i] = eval_result['accuracy']
-            x_layers[neurons, i] = (neurons + 1) * 100
+            x_layers[neurons, i] = neurons + 1
 
     acc_mean = np.mean(accuracies, axis=1)
     acc_std = np.std(accuracies, axis=1)
@@ -278,12 +283,14 @@ def neuron_analysis(n_neurons, train_x, train_y, test_x, test_y):
     plt.figure(figsize=(6, 6))
     plt.scatter(x_layers, accuracies, marker='o', color='k', alpha=0.5,
                 label='accuracies', zorder=0)
-    plt.errorbar(range(len(acc_mean) + 1) * 100, acc_mean, color='r', yerr=acc_std,
+    plt.errorbar(range(1, len(acc_mean) + 1), acc_mean, color='r', yerr=acc_std,
                  linewidth=1, label='mean accuracy', capsize=2)
     plt.legend()
     plt.xlabel('Neurons')
     plt.ylabel('Accuracy')
     plt.savefig('neuron_accuracy.pdf')
+
+    return acc_mean, acc_std, accuracies
 
 
 def layer_analysis(n_layers, train_x, train_y, test_x, test_y):
@@ -514,7 +521,8 @@ if __name__ == "__main__":
     n_classes = len(np.unique(labels))
 
 #    layer_analysis(5, train_x, train_y, test_x, test_y)
-    neuron_analysis(1000, train_x, train_y, test_x, test_y)
+    nuer_mean, neur_std, neur_acc = neuron_analysis(2, train_x, train_y,
+                                                    test_x, test_y)
 
 #    pred_result = classifier.predict(
 #            input_fn=lambda: eval_fn(pred_x, labels=None, batch_size=100))
