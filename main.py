@@ -56,7 +56,9 @@ if not os.path.exists('./out'):
     os.makedirs('./out')
 
 # neural network configs
-n_layers = 2
+n_layers = 3
+n_nodes = 40
+m_train = 1.
 
 
 # =============================================================================
@@ -150,103 +152,100 @@ def eval_fn(features, labels, batch_size):
 
 
 # =============================================================================
-# Plotting
-# =============================================================================
-
-def corner_plot(data, cat, labels, data_amt, filename):
-    # convert string class labels to color labels (for use w/ scatter)
-    colClass = []
-    for c in cat:
-        colClass.append(cdict[c])
-
-    colClass = np.array(colClass)
-
-    # plot the classes/colors
-    nAx = len(data)
-
-    fig1, ax1 = plt.subplots(nAx - 1, nAx - 1, sharex=True, sharey=True)
-    fig1.suptitle('color-color Corner Plot: {0} Data'.format(data_amt),
-                  fontsize=16)
-    fig1.set_size_inches(4 * (nAx - 1), 4 * (nAx - 1))
-
-    ax1[0, 0].set_xticklabels([])
-    ax1[0, 0].set_yticklabels([])
-
-    for i in range(nAx - 1):
-        for j in range(nAx - 1):
-            if j > i:
-                ax1[i, j].axis('off')
-
-            else:
-                ax1[i, j].scatter(data[j], data[i + 1], c=colClass, s=50)
-
-            if j == 0:
-                ax1[i, j].set_ylabel(labels[i + 1])
-
-            if i == nAx - 2:
-                ax1[i, j].set_xlabel(labels[j])
-
-    fig1.subplots_adjust(hspace=0, wspace=0)
-
-    recs = []
-    for i in range(0, len(ckeys)):
-        recs.append(mpatches.Circle((0, 0), radius=50, fc=cdict[ckeys[i]]))
-
-    ax1[0, nAx - 2].legend(recs, ckeys, loc="upper right", ncol=2)
-
-    plt.show()
-
-    fig1.savefig('./out/{0}.pdf'.format(filename))
-
-
-def roc_plot(tpr, fpr, roc_auc, clfType, shortType):
-    print('Plotting ROC curve...')
-    fig1 = plt.figure(figsize=(12, 12))
-    plt.plot(fpr['micro'], tpr['micro'],
-             label='micro-average ROC curve (area = {0:0.3f})'
-             .format(roc_auc["micro"]), color='deeppink', linestyle=':',
-             linewidth=4)
-
-    plt.plot(fpr['macro'], tpr['macro'],
-             label='macro-average ROC curve (area = {0:0.3f})'
-             .format(roc_auc["macro"]), color='navy', linestyle=':',
-             linewidth=4)
-
-    for i in range(n_classes):
-        label = ''
-        if ckeys[i] == 'W':
-            label = 'White Dwarf  (area = {0:0.3f})'.format(roc_auc[i])
-        elif ckeys[i] == 'C':
-            label = 'Carbon Star  (area = {0:0.3f})'.format(roc_auc[i])
-        else:
-            label = 'Class {0} Stars (area = {1:0.3f})'.format(ckeys[i],
-                                                               roc_auc[i])
-
-        plt.plot(fpr[i], tpr[i], color=cdict[ckeys[i]], lw=2,
-                 label=label)
-
-    plt.plot([0, 1], [0, 1], 'k--', lw=2)
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('Stellar Type Classification ROC curves: {0}'.format(clfType),
-              fontsize=16)
-    plt.legend(loc="lower right")
-
-    plt.show()
-
-    fig1.savefig('./out/{0}_roc.pdf'.format(shortType))
-
-    print('Plot complete!')
-
-
-# =============================================================================
 # Analysis
 # =============================================================================
 
+def acc_analysis(train_x, train_y, test_x, test_y):
+    n_sample = 5
+    accuracies = np.zeros(n_sample)
+    for i in trange(n_sample, desc='Samples'):
+        # clean out the model directory
+        for filename in os.listdir(model_dir):
+            filepath = os.path.join(model_dir, filename)
+            try:
+                if os.path.isfile(filepath):
+                    os.unlink(filepath)
+                elif os.path.isdir(filepath):
+                    shutil.rmtree(filepath)
+            except Exception as e:
+                print(e)
+        
+        hidden_units = hidden_units = [n_nodes] * n_layers
+        classifier = tf.estimator.DNNClassifier(feature_columns=feature_cols,
+                                                hidden_units=hidden_units,
+                                                n_classes=n_classes,
+                                                label_vocabulary=label_vocab,
+                                                model_dir=model_dir)
+
+        classifier.train(steps=np.floor(m_train * len(train_y)),
+                         input_fn=lambda: train_fn(train_x, train_y, 100))
+
+        eval_result = classifier.evaluate(input_fn=lambda: eval_fn(test_x,
+                                                                   test_y,
+                                                                   100))
+        accuracies[i] = eval_result['accuracy']
+
+    acc_mean = np.mean(accuracies)
+    acc_std = np.std(accuracies)
+
+    return acc_mean, acc_std, accuracies
+
+
+def train_analysis(srange, train_x, train_y, test_x, test_y):
+    n_sample = 5
+    n_test = 20
+    accuracies = np.zeros((n_test, n_sample))
+    x_layers = np.zeros((n_test, n_sample), dtype=int)
+    for i, mult in enumerate(tqdm(np.linspace(np.min(srange), np.max(srange),
+                                              num=n_test), desc='Sample Set Size')):
+        for j in trange(n_sample, desc='Samples'):
+            # clean out the model directory
+            for filename in os.listdir(model_dir):
+                filepath = os.path.join(model_dir, filename)
+                try:
+                    if os.path.isfile(filepath):
+                        os.unlink(filepath)
+                    elif os.path.isdir(filepath):
+                        shutil.rmtree(filepath)
+                except Exception as e:
+                    print(e)
+            
+            hidden_units = hidden_units = [n_nodes] * n_layers
+            classifier = tf.estimator.DNNClassifier(feature_columns=feature_cols,
+                                                    hidden_units=hidden_units,
+                                                    n_classes=n_classes,
+                                                    label_vocabulary=label_vocab,
+                                                    model_dir=model_dir)
+
+            classifier.train(steps=np.floor(mult * len(train_y)),
+                             input_fn=lambda: train_fn(train_x, train_y, 100))
+
+            eval_result = classifier.evaluate(input_fn=lambda: eval_fn(test_x,
+                                                                       test_y,
+                                                                       100))
+            accuracies[i, j] = eval_result['accuracy']
+            x_layers[i, j] = np.floor(mult * len(train_y))
+
+    acc_mean = np.mean(accuracies, axis=1)
+    acc_std = np.std(accuracies, axis=1)
+
+    plt.figure(figsize=(6, 6))
+    plt.scatter(x_layers, accuracies, marker='o', color='k', alpha=0.5,
+                label='accuracies', zorder=0)
+    plt.plot(x_layers[:, 0], acc_mean, marker='x', color='r',
+                linewidth=1, label='mean accuracy')
+    plt.errorbar(x_layers[:, 0], acc_mean, color='r', yerr=acc_std,
+                 linewidth=1, label='$\pm 1 \sigma_{n}$', capsize=2)
+    plt.legend()
+    plt.xlabel('Training Set Size')
+    plt.ylabel('Accuracy')
+    plt.savefig('train_accuracy.pdf')
+
+    return acc_mean, acc_std, accuracies
+
+
 def neuron_analysis(n_neurons, train_x, train_y, test_x, test_y):
-    n_pts = 1
+    n_pts = 5
     accuracies = np.zeros((n_neurons, n_pts))
     x_layers = np.zeros((n_neurons, n_pts), dtype=int)
     for neurons in trange(n_neurons, desc='Neurons'):
@@ -268,14 +267,14 @@ def neuron_analysis(n_neurons, train_x, train_y, test_x, test_y):
                                                     label_vocabulary=label_vocab,
                                                     model_dir=model_dir)
 
-            classifier.train(steps=np.floor(1 * len(train_y)),
+            classifier.train(steps=np.floor(m_train * len(train_y)),
                              input_fn=lambda: train_fn(train_x, train_y, 100))
 
             eval_result = classifier.evaluate(input_fn=lambda: eval_fn(test_x,
                                                                        test_y,
                                                                        100))
             accuracies[neurons, i] = eval_result['accuracy']
-            x_layers[neurons, i] = neurons + 1
+            x_layers[neurons, i] = int(neurons + 1)
 
     acc_mean = np.mean(accuracies, axis=1)
     acc_std = np.std(accuracies, axis=1)
@@ -283,10 +282,12 @@ def neuron_analysis(n_neurons, train_x, train_y, test_x, test_y):
     plt.figure(figsize=(6, 6))
     plt.scatter(x_layers, accuracies, marker='o', color='k', alpha=0.5,
                 label='accuracies', zorder=0)
-    plt.errorbar(range(1, len(acc_mean) + 1), acc_mean, color='r', yerr=acc_std,
-                 linewidth=1, label='mean accuracy', capsize=2)
+    plt.scatter(x_layers[:, 0], acc_mean, marker='x', color='r',
+                linewidth=1, label='mean accuracy')
+    plt.errorbar(x_layers[:, 0], acc_mean, color='r', yerr=acc_std,
+                 linewidth=1, label='$\pm 1 \sigma_{n}$', capsize=2)
     plt.legend()
-    plt.xlabel('Neurons')
+    plt.xlabel('Nodes')
     plt.ylabel('Accuracy')
     plt.savefig('neuron_accuracy.pdf')
 
@@ -294,11 +295,11 @@ def neuron_analysis(n_neurons, train_x, train_y, test_x, test_y):
 
 
 def layer_analysis(n_layers, train_x, train_y, test_x, test_y):
-    n_pts = 10
+    n_pts = 5
     accuracies = np.zeros((n_layers + 1, n_pts))
     x_layers = np.zeros((n_layers + 1, n_pts), dtype=int)
-    for layers in range(n_layers+1):
-        for i in range(n_pts):
+    for layers in trange(n_layers+1, desc='Layers'):
+        for i in trange(n_pts, desc='Points'):
             # clean out the model directory
             for filename in os.listdir(model_dir):
                 filepath = os.path.join(model_dir, filename)
@@ -309,21 +310,21 @@ def layer_analysis(n_layers, train_x, train_y, test_x, test_y):
                         shutil.rmtree(filepath)
                 except Exception as e:
                     print(e)
-            hidden_units = [100] * layers
+            hidden_units = [n_nodes] * layers
             classifier = tf.estimator.DNNClassifier(feature_columns=feature_cols,
                                                     hidden_units=hidden_units,
                                                     n_classes=n_classes,
                                                     label_vocabulary=label_vocab,
                                                     model_dir=model_dir)
 
-            classifier.train(steps=np.floor(1 * len(train_y)),
+            classifier.train(steps=np.floor(m_train * len(train_y)),
                              input_fn=lambda: train_fn(train_x, train_y, 100))
 
             eval_result = classifier.evaluate(input_fn=lambda: eval_fn(test_x,
                                                                        test_y,
                                                                        100))
             accuracies[layers, i] = eval_result['accuracy']
-            x_layers[layers, i] = layers
+            x_layers[layers, i] = int(layers)
 
     acc_mean = np.mean(accuracies, axis=1)
     acc_std = np.std(accuracies, axis=1)
@@ -331,120 +332,14 @@ def layer_analysis(n_layers, train_x, train_y, test_x, test_y):
     plt.figure(figsize=(6, 6))
     plt.scatter(x_layers, accuracies, marker='o', color='k', alpha=0.5,
                 label='accuracies', zorder=0)
-    plt.errorbar(range(len(acc_mean)), acc_mean, color='r', yerr=acc_std,
-                 linewidth=1, label='mean accuracy', capsize=2)
+    plt.scatter(x_layers[:, 0], acc_mean, marker='x', color='r',
+                linewidth=1, label='mean accuracy')
+    plt.errorbar(x_layers[:, 0], acc_mean, color='r', yerr=acc_std,
+                 linewidth=1, label='$\pm 1 \sigma_{n}$', capsize=2)
     plt.legend()
     plt.xlabel('Number of Hidden Layers')
     plt.ylabel('Accuracy')
     plt.savefig('layer_accuracy.pdf')
-
-
-def k_fold_analysis(func, X_train, y_train, name, s_name):
-    cv = StratifiedKFold(n_splits=5, random_state=0)
-
-    micro_tprs = []
-    macro_tprs = []
-
-    micro_aucs = []
-    macro_aucs = []
-
-    t_trains = []
-    t_tests = []
-    scores = []
-
-    mean_fpr = np.linspace(0, 1, 1000)
-
-    i = 0
-    for train, test in cv.split(X_train, y_train):
-        print("Fold {0}...".format(i))
-        tpr, fpr, roc_auc, t_train, t_test, score = func(X_train[train],
-                                                         X_train[test],
-                                                         y_train[train],
-                                                         y_train[test])
-
-        micro_tprs.append(interp(mean_fpr, fpr['micro'], tpr['micro']))
-        macro_tprs.append(interp(mean_fpr, fpr['macro'], tpr['macro']))
-
-        micro_aucs.append(roc_auc['micro'])
-        macro_aucs.append(roc_auc['macro'])
-
-        t_trains.append(t_train)
-        t_tests.append(t_test)
-        scores.append(score)
-
-        # Plot micro stats
-        plt.figure(0, figsize=(12, 12))
-        plt.plot(fpr['micro'], tpr['micro'], lw=1, alpha=0.3,
-                 label='ROC fold {0} (AUC = {1:.3f})'
-                 .format(i, roc_auc['micro']))
-
-        # Plot macro stats
-        plt.figure(1, figsize=(12, 12))
-        plt.plot(fpr['macro'], tpr['macro'], lw=1, alpha=0.3,
-                 label='ROC fold {0} (AUC = {1:.3f})'
-                 .format(i, roc_auc['macro']))
-
-        i += 1
-
-    # Micro
-    plt.figure(0)
-    plt.plot([0, 1], [0, 1], linestyle='--', lw=2,
-             color='k', alpha=.8)
-
-    mean_tpr = np.mean(micro_tprs, axis=0)
-    mean_tpr[-1] = 1.0
-    mean_auc = auc(mean_fpr, mean_tpr)
-    std_auc = np.std(micro_aucs)
-    plt.plot(mean_fpr, mean_tpr, color='b',
-             label=r'Mean ROC (AUC = {0:.3f} $\pm$ {1:.3f})'
-             .format(mean_auc, std_auc), lw=2, alpha=.8)
-
-    std_tpr = np.std(micro_tprs, axis=0)
-    tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
-    tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
-    plt.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2,
-                     label=r'$\pm$ 1 std. dev.')
-
-    plt.xlim([0., 1.0])
-    plt.ylim([0., 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('Micro-averaged ROC curve: {0}'.format(name))
-    plt.legend(loc="lower right")
-
-    plt.savefig('./out/{0}_micro_roc.pdf'.format(s_name))
-
-    # Macro
-    plt.figure(1)
-    plt.plot([0, 1], [0, 1], linestyle='--', lw=2,
-             color='k', alpha=.8)
-
-    mean_tpr = np.mean(macro_tprs, axis=0)
-    mean_tpr[-1] = 1.0
-    mean_auc = auc(mean_fpr, mean_tpr)
-    std_auc = np.std(macro_aucs)
-    plt.plot(mean_fpr, mean_tpr, color='b',
-             label=r'Mean ROC (AUC = {0:.3f} $\pm$ {1:.3f})'
-             .format(mean_auc, std_auc), lw=2, alpha=.8)
-
-    std_tpr = np.std(macro_tprs, axis=0)
-    tprs_upper = np.minimum(mean_tpr + std_tpr, 1)
-    tprs_lower = np.maximum(mean_tpr - std_tpr, 0)
-    plt.fill_between(mean_fpr, tprs_lower, tprs_upper, color='grey', alpha=.2,
-                     label=r'$\pm$ 1 std. dev.')
-
-    plt.xlim([0., 1.0])
-    plt.ylim([0., 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('Macro-averaged ROC curve: {0}'.format(name))
-    plt.legend(loc="lower right")
-
-    plt.savefig('./out/{0}_macro_roc.pdf'.format(s_name))
-
-    plt.show()
-
-    return t_trains, t_tests, scores
 
 
 def main():
@@ -518,11 +413,16 @@ if __name__ == "__main__":
     for key in train_x.keys():
         feature_cols.append(tf.feature_column.numeric_column(key=key))
 
-    n_classes = len(np.unique(labels))
+#    n_classes = len(np.unique(labels))
+#
+#    layer_analysis(10, train_x, train_y, test_x, test_y)
+#    nuer_mean, neur_std, neur_acc = neuron_analysis(50, train_x, train_y,
+#                                                    test_x, test_y)
+#    train_mean, train_std, train_acc = train_analysis([0.05, 2],
+#                                                      train_x, train_y,
+#                                                      test_x, test_y)
 
-#    layer_analysis(5, train_x, train_y, test_x, test_y)
-    nuer_mean, neur_std, neur_acc = neuron_analysis(2, train_x, train_y,
-                                                    test_x, test_y)
+    acc_mean, acc_std, accuracies = acc_analysis(train_x, train_y, test_x, test_y)
 
 #    pred_result = classifier.predict(
 #            input_fn=lambda: eval_fn(pred_x, labels=None, batch_size=100))
