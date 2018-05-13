@@ -156,7 +156,7 @@ def eval_fn(features, labels, batch_size):
 # =============================================================================
 
 def acc_analysis(train_x, train_y, test_x, test_y):
-    n_sample = 5
+    n_sample = 100
     accuracies = np.zeros(n_sample)
     for i in trange(n_sample, desc='Samples'):
         # clean out the model directory
@@ -417,7 +417,7 @@ if __name__ == "__main__":
     for key in train_x.keys():
         feature_cols.append(tf.feature_column.numeric_column(key=key))
 
-#    n_classes = len(np.unique(labels))
+    n_classes = len(np.unique(labels))
 #
 #    layer_analysis(10, train_x, train_y, test_x, test_y)
 #    nuer_mean, neur_std, neur_acc = neuron_analysis(50, train_x, train_y,
