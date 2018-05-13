@@ -175,7 +175,8 @@ def acc_analysis(train_x, train_y, test_x, test_y):
                                                 hidden_units=hidden_units,
                                                 n_classes=n_classes,
                                                 label_vocabulary=label_vocab,
-                                                model_dir=model_dir)
+                                                model_dir=model_dir,
+                                                activation_fn=tf.nn.elu)
 
         classifier.train(steps=np.floor(m_train * len(train_y)),
                          input_fn=lambda: train_fn(train_x, train_y, 100))
@@ -215,7 +216,8 @@ def train_analysis(srange, train_x, train_y, test_x, test_y):
                                                     hidden_units=hidden_units,
                                                     n_classes=n_classes,
                                                     label_vocabulary=label_vocab,
-                                                    model_dir=model_dir)
+                                                    model_dir=model_dir,
+                                                    activation_fn=tf.nn.elu)
 
             classifier.train(steps=np.floor(mult * len(train_y)),
                              input_fn=lambda: train_fn(train_x, train_y, 100))
@@ -265,7 +267,8 @@ def neuron_analysis(n_neurons, train_x, train_y, test_x, test_y):
                                                     hidden_units=hidden_units,
                                                     n_classes=n_classes,
                                                     label_vocabulary=label_vocab,
-                                                    model_dir=model_dir)
+                                                    model_dir=model_dir,
+                                                    activation_fn=tf.nn.elu)
 
             classifier.train(steps=np.floor(m_train * len(train_y)),
                              input_fn=lambda: train_fn(train_x, train_y, 100))
@@ -315,7 +318,8 @@ def layer_analysis(n_layers, train_x, train_y, test_x, test_y):
                                                     hidden_units=hidden_units,
                                                     n_classes=n_classes,
                                                     label_vocabulary=label_vocab,
-                                                    model_dir=model_dir)
+                                                    model_dir=model_dir,
+                                                    activation_fn=tf.nn.elu)
 
             classifier.train(steps=np.floor(m_train * len(train_y)),
                              input_fn=lambda: train_fn(train_x, train_y, 100))
