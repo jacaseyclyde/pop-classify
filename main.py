@@ -18,7 +18,9 @@ import warnings
 from tqdm import tqdm, trange
 
 import numpy as np
+
 from scipy import interp
+from scipy.optimize import curve_fit
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -56,9 +58,11 @@ if not os.path.exists('./out'):
     os.makedirs('./out')
 
 # neural network configs
-n_layers = 3
-n_nodes = 40
+n_layers = 8
+n_nodes = 26
 m_train = 1.
+
+fig_size=(3, 3)
 
 
 # =============================================================================
@@ -66,6 +70,15 @@ m_train = 1.
 # # Function Definitions
 # =============================================================================
 # =============================================================================
+
+# =============================================================================
+# Math
+# =============================================================================
+
+def sigmoid(x, x0, k, a):
+    y = a / (1 + np.exp(-k*(x-x0)))  # + c
+    return y
+
 
 # =============================================================================
 # Data Handling
@@ -169,12 +182,12 @@ def acc_analysis(train_x, train_y, test_x, test_y):
                     shutil.rmtree(filepath)
             except Exception as e:
                 print(e)
-        
+
         hidden_units = hidden_units = [n_nodes] * n_layers
-        classifier = tf.estimator.DNNClassifier(feature_columns=feature_cols,
+        classifier = tf.estimator.DNNClassifier(feature_columns=ftr_cols,
                                                 hidden_units=hidden_units,
                                                 n_classes=n_classes,
-                                                label_vocabulary=label_vocab,
+                                                label_vocabulary=label_voc,
                                                 model_dir=model_dir,
                                                 activation_fn=tf.nn.elu)
 
@@ -198,7 +211,8 @@ def train_analysis(srange, train_x, train_y, test_x, test_y):
     accuracies = np.zeros((n_test, n_sample))
     x_layers = np.zeros((n_test, n_sample), dtype=int)
     for i, mult in enumerate(tqdm(np.linspace(np.min(srange), np.max(srange),
-                                              num=n_test), desc='Sample Set Size')):
+                                              num=n_test),
+                                  desc='Sample Set Size')):
         for j in trange(n_sample, desc='Samples'):
             # clean out the model directory
             for filename in os.listdir(model_dir):
@@ -210,12 +224,12 @@ def train_analysis(srange, train_x, train_y, test_x, test_y):
                         shutil.rmtree(filepath)
                 except Exception as e:
                     print(e)
-            
+
             hidden_units = hidden_units = [n_nodes] * n_layers
-            classifier = tf.estimator.DNNClassifier(feature_columns=feature_cols,
+            classifier = tf.estimator.DNNClassifier(feature_columns=ftr_cols,
                                                     hidden_units=hidden_units,
                                                     n_classes=n_classes,
-                                                    label_vocabulary=label_vocab,
+                                                    label_vocabulary=label_voc,
                                                     model_dir=model_dir,
                                                     activation_fn=tf.nn.elu)
 
@@ -231,19 +245,33 @@ def train_analysis(srange, train_x, train_y, test_x, test_y):
     acc_mean = np.mean(accuracies, axis=1)
     acc_std = np.std(accuracies, axis=1)
 
-    plt.figure(figsize=(6, 6))
+    tr_x = x_layers[:, 0]
+    x_mult = np.linspace(np.min(srange), np.max(srange), num=n_test)
+
+    popt_tr, pcov_tr = curve_fit(sigmoid, x_mult, acc_mean, maxfev=8000)
+    xlin = np.linspace(np.min(srange), np.max(srange), num=1000)
+    yfit = sigmoid(xlin, *popt_tr)
+
+    plt.figure(figsize=fig_size)
     plt.scatter(x_layers, accuracies, marker='o', color='k', alpha=0.5,
                 label='accuracies', zorder=0)
-    plt.plot(x_layers[:, 0], acc_mean, marker='x', color='r',
-                linewidth=1, label='mean accuracy')
-    plt.errorbar(x_layers[:, 0], acc_mean, color='r', yerr=acc_std,
+    plt.plot(tr_x, acc_mean, marker='x', color='r',
+             linewidth=1, label='mean accuracy')
+    plt.errorbar(tr_x, acc_mean, color='r', yerr=acc_std,
                  linewidth=1, label='$\pm 1 \sigma_{n}$', capsize=2)
+    plt.plot(xlin * len(train_y), yfit, 'b--',
+             linewidth=1, label='Accuracy Model')
+
     plt.legend()
     plt.xlabel('Training Set Size')
     plt.ylabel('Accuracy')
     plt.savefig('train_accuracy.pdf')
 
-    return acc_mean, acc_std, accuracies
+    sig = sigmoid(x_mult, *popt_tr)
+
+    grad = np.gradient(sig)
+
+    return x_mult[np.argmax(grad < 1e-4)]
 
 
 def neuron_analysis(n_neurons, train_x, train_y, test_x, test_y):
@@ -263,10 +291,10 @@ def neuron_analysis(n_neurons, train_x, train_y, test_x, test_y):
                 except Exception as e:
                     print(e)
             hidden_units = [neurons + 1] * n_layers
-            classifier = tf.estimator.DNNClassifier(feature_columns=feature_cols,
+            classifier = tf.estimator.DNNClassifier(feature_columns=ftr_cols,
                                                     hidden_units=hidden_units,
                                                     n_classes=n_classes,
-                                                    label_vocabulary=label_vocab,
+                                                    label_vocabulary=label_voc,
                                                     model_dir=model_dir,
                                                     activation_fn=tf.nn.elu)
 
@@ -282,19 +310,31 @@ def neuron_analysis(n_neurons, train_x, train_y, test_x, test_y):
     acc_mean = np.mean(accuracies, axis=1)
     acc_std = np.std(accuracies, axis=1)
 
-    plt.figure(figsize=(6, 6))
+    nr_x = x_layers[:, 0]
+
+    popt_nr, pcov_nr = curve_fit(sigmoid, nr_x, acc_mean)
+    xlin = np.linspace(1, n_neurons, num=1000)
+    yfit = sigmoid(xlin, *popt_nr)
+
+    plt.figure(figsize=fig_size)
     plt.scatter(x_layers, accuracies, marker='o', color='k', alpha=0.5,
                 label='accuracies', zorder=0)
-    plt.scatter(x_layers[:, 0], acc_mean, marker='x', color='r',
+    plt.scatter(nr_x, acc_mean, marker='x', color='r',
                 linewidth=1, label='mean accuracy')
-    plt.errorbar(x_layers[:, 0], acc_mean, color='r', yerr=acc_std,
+    plt.errorbar(nr_x, acc_mean, color='r', yerr=acc_std,
                  linewidth=1, label='$\pm 1 \sigma_{n}$', capsize=2)
+    plt.plot(xlin, yfit, 'b--', linewidth=1, label='Accuracy Model')
+
     plt.legend()
     plt.xlabel('Nodes')
     plt.ylabel('Accuracy')
     plt.savefig('neuron_accuracy.pdf')
 
-    return acc_mean, acc_std, accuracies
+    sig = sigmoid(nr_x, *popt_nr)
+
+    grad = np.gradient(sig)
+
+    return int(nr_x[np.argmax(grad < 1e-4)])
 
 
 def layer_analysis(n_layers, train_x, train_y, test_x, test_y):
@@ -314,10 +354,10 @@ def layer_analysis(n_layers, train_x, train_y, test_x, test_y):
                 except Exception as e:
                     print(e)
             hidden_units = [n_nodes] * layers
-            classifier = tf.estimator.DNNClassifier(feature_columns=feature_cols,
+            classifier = tf.estimator.DNNClassifier(feature_columns=ftr_cols,
                                                     hidden_units=hidden_units,
                                                     n_classes=n_classes,
-                                                    label_vocabulary=label_vocab,
+                                                    label_vocabulary=label_voc,
                                                     model_dir=model_dir,
                                                     activation_fn=tf.nn.elu)
 
@@ -333,17 +373,33 @@ def layer_analysis(n_layers, train_x, train_y, test_x, test_y):
     acc_mean = np.mean(accuracies, axis=1)
     acc_std = np.std(accuracies, axis=1)
 
-    plt.figure(figsize=(6, 6))
+    lyr_x = x_layers[:, 0]
+
+    popt_lyr, pcov_lyr = curve_fit(sigmoid, lyr_x, acc_mean, maxfev=8000,
+                                   bounds=([-np.inf, -np.inf, 0.],
+                                           [np.inf, np.inf, 1.]))
+    xlin = np.linspace(0, n_layers, num=1000)
+    yfit = sigmoid(xlin, *popt_lyr)
+
+    plt.figure(figsize=fig_size)
     plt.scatter(x_layers, accuracies, marker='o', color='k', alpha=0.5,
                 label='accuracies', zorder=0)
-    plt.scatter(x_layers[:, 0], acc_mean, marker='x', color='r',
+    plt.scatter(lyr_x, acc_mean, marker='x', color='r',
                 linewidth=1, label='mean accuracy')
-    plt.errorbar(x_layers[:, 0], acc_mean, color='r', yerr=acc_std,
+    plt.errorbar(lyr_x, acc_mean, color='r', yerr=acc_std,
                  linewidth=1, label='$\pm 1 \sigma_{n}$', capsize=2)
+    plt.plot(xlin, yfit, 'b--', linewidth=1, label='Accuracy Model')
+
     plt.legend()
     plt.xlabel('Number of Hidden Layers')
     plt.ylabel('Accuracy')
     plt.savefig('layer_accuracy.pdf')
+
+    sig = sigmoid(lyr_x, *popt_lyr)
+
+    grad = np.gradient(sig)
+
+    return int(lyr_x[np.argmax(grad < 1e-4)])
 
 
 def main():
@@ -401,7 +457,7 @@ def main():
 if __name__ == "__main__":
     # main()
     features, labels = import_data()
-    label_vocab = np.unique(labels).tolist()
+    label_voc = np.unique(labels).tolist()
 
     train_x, test_x, train_y, test_y = train_test_split(features,
                                                         labels,
@@ -413,20 +469,23 @@ if __name__ == "__main__":
     pred_x = dict(zip(['u-g', 'g-r', 'r-i', 'i-z'], test_x[:5].T))
     test_x = dict(zip(['u-g', 'g-r', 'r-i', 'i-z'], test_x.T))
 
-    feature_cols = []
+    ftr_cols = []
     for key in train_x.keys():
-        feature_cols.append(tf.feature_column.numeric_column(key=key))
+        ftr_cols.append(tf.feature_column.numeric_column(key=key))
 
     n_classes = len(np.unique(labels))
-#
-#    layer_analysis(10, train_x, train_y, test_x, test_y)
-#    nuer_mean, neur_std, neur_acc = neuron_analysis(50, train_x, train_y,
-#                                                    test_x, test_y)
-#    train_mean, train_std, train_acc = train_analysis([0.05, 2],
-#                                                      train_x, train_y,
-#                                                      test_x, test_y)
 
-    acc_mean, acc_std, accuracies = acc_analysis(train_x, train_y, test_x, test_y)
+    lyr_opt = layer_analysis(10, train_x, train_y, test_x, test_y)
+    n_layers = lyr_opt
+
+    nr_opt = neuron_analysis(70, train_x, train_y, test_x, test_y)
+    n_nodes = nr_opt
+
+    tr_opt = train_analysis([0.05, 3.], train_x, train_y, test_x, test_y)
+    m_train = tr_opt
+
+    acc_mean, acc_std, accuracies = acc_analysis(train_x, train_y,
+                                                 test_x, test_y)
 
 #    pred_result = classifier.predict(
 #            input_fn=lambda: eval_fn(pred_x, labels=None, batch_size=100))
@@ -437,5 +496,5 @@ if __name__ == "__main__":
 #        class_id = pred_dict['class_ids'][0]
 #        probability = pred_dict['probabilities'][class_id]
 #
-#        print(template.format(label_vocabulary[class_id],
+#        print(template.format(label_voculary[class_id],
 #                              100 * probability, expec))
