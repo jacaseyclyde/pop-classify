@@ -485,14 +485,14 @@ if __name__ == "__main__":
     tr_opt = train_analysis([0.05, 3.], train_x, train_y, test_x, test_y)
     m_train = tr_opt
 
-    acc_mean, acc_std, accuracies = acc_analysis(train_x, train_y,
-                                                 test_x, test_y)
-
     results = {'layers': lyr_opt, 'nodes': nr_opt,
                'training': int(m_train * n_classes)}
     df = pd.DataFrame(results)
     df.to_csv('./results.csv')
     print(results)
+
+    acc_mean, acc_std, accuracies = acc_analysis(train_x, train_y,
+                                                 test_x, test_y)
 
 #    pred_result = classifier.predict(
 #            input_fn=lambda: eval_fn(pred_x, labels=None, batch_size=100))
