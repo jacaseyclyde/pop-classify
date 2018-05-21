@@ -18,6 +18,7 @@ import warnings
 from tqdm import tqdm, trange
 
 import numpy as np
+import pandas as pd
 
 from scipy import interp
 from scipy.optimize import curve_fit
@@ -58,11 +59,11 @@ if not os.path.exists('./out'):
     os.makedirs('./out')
 
 # neural network configs
-n_layers = 8
-n_nodes = 26
+n_layers = 5
+n_nodes = 25
 m_train = 1.
 
-fig_size=(3, 3)
+fig_size=(6, 6)
 
 
 # =============================================================================
@@ -125,7 +126,7 @@ def import_data():
         elif c == 'CV':
             labels.append('Cataclysmic Variable')
         elif ('sd:F0' in c) or ('sdF3' in c):
-            labels.append('F')
+            labels.append('subdwarf')
 
     labels = np.array(labels)
 
@@ -486,6 +487,12 @@ if __name__ == "__main__":
 
     acc_mean, acc_std, accuracies = acc_analysis(train_x, train_y,
                                                  test_x, test_y)
+
+    results = {'layers': lyr_opt, 'nodes': nr_opt,
+               'training': int(m_train * n_classes)}
+    df = pd.DataFrame(results)
+    df.to_csv('./results.csv')
+    print(results)
 
 #    pred_result = classifier.predict(
 #            input_fn=lambda: eval_fn(pred_x, labels=None, batch_size=100))
